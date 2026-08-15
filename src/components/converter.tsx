@@ -39,10 +39,6 @@ interface Result {
 const DOC_RE = /\.(qmd|md)$/i;
 const CSS_RE = /\.css$/i;
 
-function extIcon(name: string) {
-  return CSS_RE.test(name) ? FileCode : FileCode;
-}
-
 export function Converter() {
   const [files, setFiles] = useState<File[]>([]);
   const [wantHtml, setWantHtml] = useState(true);
@@ -299,7 +295,7 @@ export function Converter() {
           {/* Convert button */}
           <Button
             size="lg"
-            disabled={busy || docs.length !== 1}
+            disabled={busy || docs.length !== 1 || (!wantHtml && !wantPdf)}
             onClick={convert}
             className="mt-6 h-11 w-full bg-gradient-to-r from-indigo-600 to-cyan-600 text-sm font-semibold shadow-lg shadow-indigo-500/25 hover:from-indigo-500 hover:to-cyan-500"
           >
@@ -344,7 +340,7 @@ export function Converter() {
                   <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
                     <span>Convirtiendo documento…</span>
                   </div>
-                  <Progress value={undefined} />
+                  <div className="h-1 w-full animate-pulse rounded-full bg-primary/70" />
                 </>
               )}
             </div>
@@ -386,24 +382,20 @@ export function Converter() {
 
             <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
               {wantHtml && (
-                <>
-                  <Button
-                    variant="outline"
-                    className="gap-2"
-                    asChild
-                  >
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  render={
                     <a
                       href={blobUrl}
                       download={result.fileName}
-                      onClick={() =>
-                        toast.success("Descargando HTML…")
-                      }
-                    >
-                      <Download className="size-4" />
-                      Descargar HTML
-                    </a>
-                  </Button>
-                </>
+                      onClick={() => toast.success("Descargando HTML…")}
+                    />
+                  }
+                >
+                  <Download className="size-4" />
+                  Descargar HTML
+                </Button>
               )}
               {wantPdf && (
                 <Button
@@ -419,11 +411,11 @@ export function Converter() {
                 <Button
                   variant="secondary"
                   className="gap-2"
-                  asChild
+                  render={
+                    <a href={blobUrl} target="_blank" rel="noreferrer" />
+                  }
                 >
-                  <a href={blobUrl} target="_blank" rel="noreferrer">
-                    Abrir en pestaña
-                  </a>
+                  Abrir en pestaña
                 </Button>
               )}
             </div>
