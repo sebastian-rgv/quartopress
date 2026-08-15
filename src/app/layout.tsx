@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
-import { VT323 } from "next/font/google";
+import { Geist, VT323 } from "next/font/google";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
 import "./globals.css";
 
-const vt323 = VT323({
+const geist = Geist({
   variable: "--font-sans",
+  subsets: ["latin"],
+});
+
+const vt323 = VT323({
+  variable: "--font-display",
   weight: "400",
   subsets: ["latin"],
 });
@@ -23,7 +28,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="es"
       suppressHydrationWarning
-      className={`${vt323.variable} h-full antialiased`}
+      className={`${geist.variable} ${vt323.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
         <ThemeProvider

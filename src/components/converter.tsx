@@ -50,6 +50,29 @@ interface NotebookResult {
 
 const DOC_RE = /\.(qmd|md)$/i;
 
+const FORMATS = [
+  {
+    id: "html",
+    name: "HTML",
+    description: "Página autónoma con MathML",
+    icon: FileText,
+  },
+  {
+    id: "pdf",
+    name: "PDF",
+    description: "Imprimir → guardar como PDF",
+    icon: Printer,
+  },
+  {
+    id: "ipynb",
+    name: "Notebook .ipynb",
+    description: "Con kernel R, Python o Julia",
+    icon: Notebook,
+  },
+] as const;
+
+type FormatId = (typeof FORMATS)[number]["id"];
+
 export function Converter() {
   const [files, setFiles] = useState<File[]>([]);
   const [wantHtml, setWantHtml] = useState(true);
@@ -67,6 +90,24 @@ export function Converter() {
   const dragDepth = useRef(0);
 
   const docs = useMemo(() => files.filter((f) => DOC_RE.test(f.name)), [files]);
+
+  const selected = useMemo(
+    (): Record<FormatId, boolean> => ({
+      html: wantHtml,
+      pdf: wantPdf,
+      ipynb: wantIpynb,
+    }),
+    [wantHtml, wantPdf, wantIpynb]
+  );
+
+  const toggleFormat = useCallback(
+    (id: FormatId, value: boolean) => {
+      if (id === "html") setWantHtml(value);
+      else if (id === "pdf") setWantPdf(value);
+      else setWantIpynb(value);
+    },
+    []
+  );
 
   useEffect(() => {
     return () => {
@@ -120,10 +161,7 @@ export function Converter() {
       }
 
       if (wantHtml || wantPdf) {
-        const out = await convertDocument(
-          { source },
-          (p) => setProgress(p)
-        );
+        const out = await convertDocument({ source }, (p) => setProgress(p));
 
         const fileName = `${baseName}.html`;
         if (blobUrl) URL.revokeObjectURL(blobUrl);
@@ -197,13 +235,12 @@ export function Converter() {
     progress && progress.phase === "download" && progress.total > 0
       ? Math.round((progress.loaded / progress.total) * 100)
       : null;
-  const canConvert =
-    docs.length === 1 && (wantHtml || wantPdf || wantIpynb);
+  const canConvert = docs.length === 1 && (wantHtml || wantPdf || wantIpynb);
 
   return (
     <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start">
       {/* Form */}
-      <Card className="shadow-xl shadow-black/5">
+      <Card className="shadow-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 ease-out hover:-translate-y-px hover:shadow-lg hover:shadow-black/5 dark:ring-white/10">
         <CardContent className="p-6 sm:p-8">
           {/* Dropzone */}
           <div
@@ -227,12 +264,11 @@ export function Converter() {
             }}
             onDrop={handleDrop}
             className={cn(
-              "group relative flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-12 text-center transition-colors",
+              "group relative flex cursor-pointer flex-col items-center justify-center gap-3 rounded-[14px] border-2 border-dashed px-6 py-12 text-center transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:outline-none",
               "border-zinc-300 bg-zinc-50/60 dark:border-zinc-700 dark:bg-zinc-900/40",
+              "hover:border-accent/60 hover:bg-accent/[0.03]",
               dragging &&
-                "border-zinc-900 bg-zinc-100 dark:border-zinc-300 dark:bg-zinc-800/60",
-              !dragging &&
-                "hover:border-zinc-400 hover:bg-zinc-100/70 dark:hover:border-zinc-600 dark:hover:bg-zinc-800/50"
+                "border-accent bg-accent/5 ring-2 ring-accent/40"
             )}
           >
             <input
@@ -246,7 +282,14 @@ export function Converter() {
                 e.target.value = "";
               }}
             />
-            <div className="grid size-12 place-items-center rounded-full bg-zinc-200/70 text-zinc-700 transition-transform group-hover:scale-105 dark:bg-zinc-800 dark:text-zinc-200">
+            <div
+              className={cn(
+                "grid size-12 place-items-center rounded-full transition-all duration-200 ease-out",
+                dragging
+                  ? "scale-110 bg-accent/15 text-accent"
+                  : "scale-100 bg-zinc-200/70 text-zinc-700 group-hover:scale-105 dark:bg-zinc-800 dark:text-zinc-200 dark:group-hover:bg-zinc-700"
+              )}
+            >
               <Upload className="size-6" />
             </div>
             <div>
@@ -259,7 +302,11 @@ export function Converter() {
             </div>
             <div className="flex flex-wrap items-center justify-center gap-1.5">
               {[".qmd", ".md"].map((ext) => (
-                <Badge key={ext} variant="secondary" className="font-mono">
+                <Badge
+                  key={ext}
+                  variant="outline"
+                  className="rounded-full font-display text-[13px] tracking-wide"
+                >
                   {ext}
                 </Badge>
               ))}
@@ -272,7 +319,7 @@ export function Converter() {
               {files.map((f) => (
                 <div
                   key={f.name}
-                  className="flex items-center gap-3 rounded-lg border border-zinc-300 bg-zinc-100 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800/70"
+                  className="flex items-center gap-3 rounded-[10px] border border-zinc-300 bg-zinc-100 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800/70"
                 >
                   <FileCode className="size-4 shrink-0 text-zinc-500" />
                   <div className="min-w-0 flex-1">
@@ -298,60 +345,57 @@ export function Converter() {
 
           {/* Format selection */}
           <div>
-            <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               Formato de salida
             </p>
-            <div className="grid grid-cols-2 gap-3">
-              <label
-                className={cn(
-                  "flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-all",
-                  wantHtml
-                    ? "border-foreground bg-muted text-foreground shadow-sm"
-                    : "border-border bg-card hover:bg-muted"
-                )}
-              >
-                <Checkbox
-                  checked={wantHtml}
-                  onCheckedChange={(v) => setWantHtml(Boolean(v))}
-                  aria-label="Generar HTML"
-                />
-                <FileText className="size-4" />
-                HTML
-              </label>
-              <label
-                className={cn(
-                  "flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-all",
-                  wantPdf
-                    ? "border-foreground bg-muted text-foreground shadow-sm"
-                    : "border-border bg-card hover:bg-muted"
-                )}
-              >
-                <Checkbox
-                  checked={wantPdf}
-                  onCheckedChange={(v) => setWantPdf(Boolean(v))}
-                  aria-label="Generar PDF"
-                />
-                <Printer className="size-4" />
-                PDF
-              </label>
-              <label
-                className={cn(
-                  "flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-all",
-                  wantIpynb
-                    ? "border-foreground bg-muted text-foreground shadow-sm"
-                    : "border-border bg-card hover:bg-muted"
-                )}
-              >
-                <Checkbox
-                  checked={wantIpynb}
-                  onCheckedChange={(v) => setWantIpynb(Boolean(v))}
-                  aria-label="Generar notebook .ipynb"
-                />
-                <Notebook className="size-4" />
-                Notebook .ipynb
-              </label>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {FORMATS.map(({ id, name, description, icon: Icon }) => {
+                const active = selected[id];
+                const spanFull = id === "ipynb";
+                return (
+                  <label
+                    key={id}
+                    className={cn(
+                      "relative flex cursor-pointer items-center gap-3 rounded-[12px] border p-4 pr-10 transition-all duration-200 ease-out select-none",
+                      spanFull && "sm:col-span-2",
+                      active
+                        ? "border-accent/60 bg-accent/[0.03] shadow-[0_0_0_1px_var(--accent)]"
+                        : "border-border bg-card hover:-translate-y-px hover:border-zinc-300 hover:shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:hover:border-zinc-600"
+                    )}
+                  >
+                    <Checkbox
+                      checked={active}
+                      onCheckedChange={(v) => toggleFormat(id, Boolean(v))}
+                      aria-label={`Generar ${name}`}
+                      className="absolute top-4 right-4 opacity-0 focus-visible:opacity-100 data-checked:border-accent data-checked:bg-accent"
+                    />
+                    <CheckCircle2
+                      className={cn(
+                        "absolute top-4 right-4 size-4 text-accent transition-all duration-150 ease-out",
+                        active ? "scale-100 opacity-100" : "scale-75 opacity-0"
+                      )}
+                    />
+                    <div
+                      className={cn(
+                        "grid size-10 shrink-0 place-items-center rounded-[10px] border transition-colors duration-200 ease-out",
+                        active
+                          ? "border-accent/30 bg-accent/10 text-accent"
+                          : "border-transparent bg-muted text-muted-foreground"
+                      )}
+                    >
+                      <Icon className="size-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">{name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {description}
+                      </p>
+                    </div>
+                  </label>
+                );
+              })}
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">
+            <p className="mt-3 text-xs leading-relaxed text-pretty text-muted-foreground">
               El PDF se genera con tu navegador (imprimir → guardar como PDF).
               El notebook detecta R, Python o Julia en los chunks de código.
             </p>
@@ -362,7 +406,7 @@ export function Converter() {
             size="lg"
             disabled={busy || !canConvert}
             onClick={convert}
-            className="mt-6 h-11 w-full text-sm font-semibold shadow-lg shadow-black/10"
+            className="mt-6 h-11 w-full bg-accent text-sm font-semibold text-accent-foreground shadow-lg shadow-accent/25 transition-all duration-200 ease-out hover:bg-accent/85 hover:shadow-xl hover:shadow-accent/30 focus-visible:ring-accent/40"
           >
             {busy ? (
               <>
@@ -390,12 +434,12 @@ export function Converter() {
                 <>
                   <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
                     <span>Descargando motor pandoc…</span>
-                    <span className="font-mono">
+                    <span className="font-mono tabular-nums">
                       {formatBytes(progress.loaded)}
                       {progress.total > 0 && ` / ${formatBytes(progress.total)}`}
                     </span>
                   </div>
-                  <Progress value={downloadPct} />
+                  <Progress value={downloadPct} indicatorClassName="bg-accent" />
                   <p className="mt-1.5 text-[11px] text-muted-foreground">
                     Se descarga una sola vez y queda en caché.
                   </p>
@@ -405,7 +449,7 @@ export function Converter() {
                   <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
                     <span>Convirtiendo documento…</span>
                   </div>
-                  <div className="h-1 w-full animate-pulse rounded-full bg-primary/70" />
+                  <div className="h-1 w-full animate-pulse rounded-full bg-accent/70" />
                 </>
               )}
             </div>
@@ -425,11 +469,13 @@ export function Converter() {
       </Card>
 
       {/* Preview */}
-      <Card className="shadow-xl shadow-black/5 lg:sticky lg:top-6">
+      <Card className="shadow-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 ease-out hover:-translate-y-px hover:shadow-lg hover:shadow-black/5 lg:sticky lg:top-6 dark:ring-white/10">
         <CardContent className="p-6 sm:p-8">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <FileText className="size-4 text-muted-foreground" />
+            <div className="flex items-center gap-2.5">
+              <div className="grid size-6 place-items-center rounded-md bg-accent/10 text-accent">
+                <FileText className="size-3.5" />
+              </div>
               <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                 Vista previa
               </h2>
@@ -453,7 +499,7 @@ export function Converter() {
             <>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
-                  <CheckCircle2 className="size-5 shrink-0 text-emerald-500" />
+                  <CheckCircle2 className="size-5 shrink-0 text-accent" />
                   <div className="min-w-0">
                     <p className="text-sm font-semibold">Documento listo</p>
                     <p className="max-w-56 truncate text-xs text-muted-foreground">
@@ -461,7 +507,11 @@ export function Converter() {
                     </p>
                   </div>
                 </div>
-                <Badge variant="secondary" className="font-mono">
+                <Badge
+                  variant="outline"
+                  className="h-auto gap-1.5 rounded-full px-2.5 py-0.5 font-display text-[13px] tracking-wide"
+                >
+                  <span className="size-1.5 rounded-full bg-accent" />
                   Pandoc 3.9
                 </Badge>
               </div>
@@ -516,7 +566,7 @@ export function Converter() {
                       <iframe
                         title="Vista previa del documento convertido"
                         src={blobUrl}
-                        className="h-[70vh] w-full rounded-lg border bg-white lg:h-[calc(100vh-24rem)]"
+                        className="h-[70vh] w-full rounded-xl border bg-white shadow-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:h-[calc(100vh-24rem)] dark:ring-1 dark:ring-white/10"
                       />
                     </>
                   )}
@@ -525,7 +575,7 @@ export function Converter() {
 
               {notebook && (
                 <div className="mt-5">
-                  <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/50 px-4 py-3 text-sm">
+                  <div className="flex items-center justify-between gap-3 rounded-[12px] border bg-muted/50 px-4 py-3 text-sm">
                     <div className="flex min-w-0 items-center gap-2">
                       <Notebook className="size-4 shrink-0 text-muted-foreground" />
                       <div className="min-w-0">
@@ -558,13 +608,15 @@ export function Converter() {
               <Skeleton className="h-[50vh] w-full" />
             </div>
           ) : (
-            <div className="flex h-[50vh] flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-border px-6 text-center">
-              <div className="grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">
-                <FileText className="size-6" />
+            <div className="flex h-[50vh] flex-col items-center justify-center gap-5 rounded-2xl border-2 border-dashed border-border bg-muted/20 px-6 text-center">
+              <div className="grid size-14 place-items-center rounded-2xl bg-muted text-muted-foreground transition-transform duration-200 ease-out group-hover:scale-105">
+                <FileText className="size-7" />
               </div>
-              <div>
-                <p className="text-sm font-medium">Aún no hay resultado</p>
-                <p className="mx-auto mt-1 max-w-xs text-xs text-muted-foreground">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-balance">
+                  Aún no hay resultado
+                </p>
+                <p className="mx-auto max-w-xs text-xs leading-relaxed text-pretty text-muted-foreground">
                   Convierte tu documento para ver la vista previa aquí, a la
                   derecha.
                 </p>
