@@ -385,6 +385,7 @@ export function Converter() {
                 <Button
                   variant="outline"
                   className="gap-2"
+                  nativeButton={false}
                   render={
                     <a
                       href={blobUrl}
@@ -411,6 +412,7 @@ export function Converter() {
                 <Button
                   variant="secondary"
                   className="gap-2"
+                  nativeButton={false}
                   render={
                     <a href={blobUrl} target="_blank" rel="noreferrer" />
                   }
