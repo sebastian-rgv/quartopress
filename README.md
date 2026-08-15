@@ -1,17 +1,18 @@
 # QuartoPress
 
-Convierte documentos **Quarto (.qmd)** o **Markdown (.md)** a **HTML** y **PDF**, 100% en tu navegador.
+Convierte documentos **Quarto (.qmd)** o **Markdown (.md)** a **HTML**, **PDF** y **notebooks Jupyter (.ipynb)**, 100% en tu navegador.
 
 Usa [Pandoc](https://pandoc.org) compilado a WebAssembly (`pandoc-wasm`), por lo que **tu documento nunca sale de tu dispositivo**: no hay servidor, ni subidas a la nube, ni binarios que instalar.
 
 ## Funcionalidades
 
-- Arrastra y suelta un `.qmd` / `.md` (más hojas de estilo `.css` opcionales).
+- Arrastra y suelta un `.qmd` / `.md`.
 - Conversión local con **pandoc 3.10 (WASM)**: YAML, tablas, pies de página y matemáticas a **MathML** (auto-contenido, sin CDN).
 - Compatibilidad con documentos de Quarto: limpia bloques ejecutables (`{python, echo=FALSE}`), `chalkboard` y temas no embebibles.
 - Genera **HTML** standalone (CSS embebido, listo para compartir).
 - Genera **PDF** con el diálogo de impresión de tu navegador (guardar como PDF), con márgenes A4.
-- Vista previa integrada, avisos de pandoc y modo claro/oscuro.
+- Genera **notebooks Jupyter (.ipynb)**: los chunks de código se vuelven celdas de código y se detecta el kernel automáticamente (**R**, **Python** o **Julia**) a partir del primer chunk (o respeta tu `jupyter:` en el YAML).
+- Vista previa integrada y modo claro/oscuro.
 
 ## Empezar
 

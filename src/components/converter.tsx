@@ -7,7 +7,9 @@ import {
   FileCode,
   FileText,
   Loader2,
+  Notebook,
   Printer,
+  RefreshCw,
   Sparkles,
   TriangleAlert,
   Upload,
@@ -21,9 +23,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
   convertDocument,
+  convertNotebook,
   formatBytes,
   type ProgressInfo,
 } from "@/lib/converter";
@@ -33,20 +38,28 @@ type Status = "idle" | "working" | "done" | "error";
 interface Result {
   html: string;
   fileName: string;
-  warnings: string[];
+  sourceName: string;
+}
+
+interface NotebookResult {
+  json: string;
+  fileName: string;
+  sourceName: string;
+  kernel: string | null;
 }
 
 const DOC_RE = /\.(qmd|md)$/i;
-const CSS_RE = /\.css$/i;
 
 export function Converter() {
   const [files, setFiles] = useState<File[]>([]);
   const [wantHtml, setWantHtml] = useState(true);
   const [wantPdf, setWantPdf] = useState(true);
+  const [wantIpynb, setWantIpynb] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [progress, setProgress] = useState<ProgressInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
+  const [notebook, setNotebook] = useState<NotebookResult | null>(null);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -54,7 +67,6 @@ export function Converter() {
   const dragDepth = useRef(0);
 
   const docs = useMemo(() => files.filter((f) => DOC_RE.test(f.name)), [files]);
-  const css = useMemo(() => files.filter((f) => CSS_RE.test(f.name)), [files]);
 
   useEffect(() => {
     return () => {
@@ -90,25 +102,43 @@ export function Converter() {
     setStatus("working");
     setError(null);
     setProgress(null);
+    setResult(null);
+    setNotebook(null);
 
     try {
-      const cssFiles = await Promise.all(
-        css.map(async (f) => ({ name: f.name, content: await f.text() }))
-      );
       const source = await docs[0].text();
-      const out = await convertDocument(
-        { source, cssFiles },
-        (p) => setProgress(p)
-      );
+      const baseName = docs[0].name.replace(DOC_RE, "");
 
-      const fileName = docs[0].name.replace(DOC_RE, ".html");
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
-      const url = URL.createObjectURL(
-        new Blob([out.html], { type: "text/html;charset=utf-8" })
-      );
+      if (wantIpynb) {
+        const nb = await convertNotebook({ source }, (p) => setProgress(p));
+        setNotebook({
+          json: nb.json,
+          fileName: `${baseName}.ipynb`,
+          sourceName: docs[0].name,
+          kernel: nb.kernel,
+        });
+      }
 
-      setBlobUrl(url);
-      setResult({ html: out.html, fileName, warnings: out.warnings });
+      if (wantHtml || wantPdf) {
+        const out = await convertDocument(
+          { source },
+          (p) => setProgress(p)
+        );
+
+        const fileName = `${baseName}.html`;
+        if (blobUrl) URL.revokeObjectURL(blobUrl);
+        const url = URL.createObjectURL(
+          new Blob([out.html], { type: "text/html;charset=utf-8" })
+        );
+
+        setBlobUrl(url);
+        setResult({
+          html: out.html,
+          fileName,
+          sourceName: docs[0].name,
+        });
+      }
+
       setStatus("done");
       toast.success("Documento convertido", {
         description: "Listo para previsualizar y descargar.",
@@ -120,7 +150,7 @@ export function Converter() {
       setStatus("error");
       toast.error("No se pudo convertir", { description: message });
     }
-  }, [docs, css, blobUrl]);
+  }, [docs, blobUrl, wantHtml, wantPdf, wantIpynb]);
 
   const handlePrint = useCallback(() => {
     if (!blobUrl) return;
@@ -141,21 +171,45 @@ export function Converter() {
     iframe.onerror = () => iframe.remove();
   }, [blobUrl]);
 
+  const reset = useCallback(() => {
+    setStatus("idle");
+    setResult(null);
+    setNotebook(null);
+    setError(null);
+    setProgress(null);
+  }, []);
+
+  const downloadNotebook = useCallback(() => {
+    if (!notebook) return;
+    const url = URL.createObjectURL(
+      new Blob([notebook.json], { type: "application/json;charset=utf-8" })
+    );
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = notebook.fileName;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    toast.success("Descargando notebook…");
+  }, [notebook]);
+
   const busy = status === "working";
   const downloadPct =
     progress && progress.phase === "download" && progress.total > 0
       ? Math.round((progress.loaded / progress.total) * 100)
       : null;
+  const canConvert =
+    docs.length === 1 && (wantHtml || wantPdf || wantIpynb);
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
-      <Card className="overflow-hidden shadow-xl shadow-indigo-500/5 backdrop-blur">
+    <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start">
+      {/* Form */}
+      <Card className="shadow-xl shadow-black/5">
         <CardContent className="p-6 sm:p-8">
           {/* Dropzone */}
           <div
             role="button"
             tabIndex={0}
-            aria-label="Subir documento .qmd o .md (y hojas de estilo .css)"
+            aria-label="Subir documento .qmd o .md"
             onClick={() => inputRef.current?.click()}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
@@ -173,26 +227,26 @@ export function Converter() {
             }}
             onDrop={handleDrop}
             className={cn(
-              "group relative flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-12 text-center transition-all",
-              "border-indigo-300/70 bg-indigo-50/40 dark:border-indigo-500/40 dark:bg-indigo-500/5",
+              "group relative flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-12 text-center transition-colors",
+              "border-zinc-300 bg-zinc-50/60 dark:border-zinc-700 dark:bg-zinc-900/40",
               dragging &&
-                "border-indigo-500 bg-indigo-100/60 dark:border-indigo-400 dark:bg-indigo-500/15",
+                "border-zinc-900 bg-zinc-100 dark:border-zinc-300 dark:bg-zinc-800/60",
               !dragging &&
-                "hover:border-indigo-500 hover:bg-indigo-100/50 dark:hover:border-indigo-400 dark:hover:bg-indigo-500/10"
+                "hover:border-zinc-400 hover:bg-zinc-100/70 dark:hover:border-zinc-600 dark:hover:bg-zinc-800/50"
             )}
           >
             <input
               ref={inputRef}
               type="file"
               className="sr-only"
-              accept=".qmd,.md,.css"
+              accept=".qmd,.md"
               multiple
               onChange={(e) => {
                 if (e.target.files) addFiles(e.target.files);
                 e.target.value = "";
               }}
             />
-            <div className="grid size-12 place-items-center rounded-full bg-indigo-500/10 text-indigo-600 transition-transform group-hover:scale-105 dark:text-indigo-300">
+            <div className="grid size-12 place-items-center rounded-full bg-zinc-200/70 text-zinc-700 transition-transform group-hover:scale-105 dark:bg-zinc-800 dark:text-zinc-200">
               <Upload className="size-6" />
             </div>
             <div>
@@ -204,7 +258,7 @@ export function Converter() {
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-1.5">
-              {[".qmd", ".md", ".css"].map((ext) => (
+              {[".qmd", ".md"].map((ext) => (
                 <Badge key={ext} variant="secondary" className="font-mono">
                   {ext}
                 </Badge>
@@ -214,42 +268,36 @@ export function Converter() {
 
           {/* Selected files */}
           {files.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {files.map((f) => {
-                const kind = CSS_RE.test(f.name) ? "css" : "doc";
-                return (
-                  <div
-                    key={f.name}
-                    className={cn(
-                      "inline-flex items-center gap-1.5 rounded-full border py-1 pl-2 pr-1 text-xs",
-                      kind === "doc"
-                        ? "border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-200"
-                        : "border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300"
-                    )}
-                  >
-                    <FileCode className="size-3.5" />
-                    <span className="max-w-52 truncate font-medium">
-                      {f.name}
-                    </span>
-                    <span className="hidden text-[10px] uppercase tracking-wide opacity-60 sm:inline">
-                      {kind}
-                    </span>
-                    <button
-                      type="button"
-                      aria-label={`Quitar ${f.name}`}
-                      className="grid size-4 place-items-center rounded-full transition-colors hover:bg-black/10 dark:hover:bg-white/10"
-                      onClick={() => removeFile(f.name)}
-                    >
-                      <X className="size-3" />
-                    </button>
+            <div className="mt-4 space-y-2">
+              {files.map((f) => (
+                <div
+                  key={f.name}
+                  className="flex items-center gap-3 rounded-lg border border-zinc-300 bg-zinc-100 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800/70"
+                >
+                  <FileCode className="size-4 shrink-0 text-zinc-500" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{f.name}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Documento · {formatBytes(f.size)}
+                    </p>
                   </div>
-                );
-              })}
+                  <button
+                    type="button"
+                    aria-label={`Quitar ${f.name}`}
+                    className="grid size-6 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-black/10 hover:text-foreground dark:hover:bg-white/10"
+                    onClick={() => removeFile(f.name)}
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
 
+          <Separator className="my-6" />
+
           {/* Format selection */}
-          <div className="mt-6">
+          <div>
             <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               Formato de salida
             </p>
@@ -258,7 +306,7 @@ export function Converter() {
                 className={cn(
                   "flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-all",
                   wantHtml
-                    ? "border-indigo-500 bg-indigo-500/10 text-indigo-700 shadow-sm dark:text-indigo-200"
+                    ? "border-foreground bg-muted text-foreground shadow-sm"
                     : "border-border bg-card hover:bg-muted"
                 )}
               >
@@ -274,7 +322,7 @@ export function Converter() {
                 className={cn(
                   "flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-all",
                   wantPdf
-                    ? "border-indigo-500 bg-indigo-500/10 text-indigo-700 shadow-sm dark:text-indigo-200"
+                    ? "border-foreground bg-muted text-foreground shadow-sm"
                     : "border-border bg-card hover:bg-muted"
                 )}
               >
@@ -286,18 +334,35 @@ export function Converter() {
                 <Printer className="size-4" />
                 PDF
               </label>
+              <label
+                className={cn(
+                  "flex cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-all",
+                  wantIpynb
+                    ? "border-foreground bg-muted text-foreground shadow-sm"
+                    : "border-border bg-card hover:bg-muted"
+                )}
+              >
+                <Checkbox
+                  checked={wantIpynb}
+                  onCheckedChange={(v) => setWantIpynb(Boolean(v))}
+                  aria-label="Generar notebook .ipynb"
+                />
+                <Notebook className="size-4" />
+                Notebook .ipynb
+              </label>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
               El PDF se genera con tu navegador (imprimir → guardar como PDF).
+              El notebook detecta R, Python o Julia en los chunks de código.
             </p>
           </div>
 
           {/* Convert button */}
           <Button
             size="lg"
-            disabled={busy || docs.length !== 1 || (!wantHtml && !wantPdf)}
+            disabled={busy || !canConvert}
             onClick={convert}
-            className="mt-6 h-11 w-full bg-gradient-to-r from-indigo-600 to-cyan-600 text-sm font-semibold shadow-lg shadow-indigo-500/25 hover:from-indigo-500 hover:to-cyan-500"
+            className="mt-6 h-11 w-full text-sm font-semibold shadow-lg shadow-black/10"
           >
             {busy ? (
               <>
@@ -359,94 +424,155 @@ export function Converter() {
         </CardContent>
       </Card>
 
-      {/* Result */}
-      {status === "done" && result && blobUrl && (
-        <Card className="overflow-hidden shadow-xl shadow-indigo-500/5">
-          <CardContent className="p-6 sm:p-8">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="size-5 text-emerald-500" />
-                <h2 className="text-base font-semibold">Documento listo</h2>
+      {/* Preview */}
+      <Card className="shadow-xl shadow-black/5 lg:sticky lg:top-6">
+        <CardContent className="p-6 sm:p-8">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <FileText className="size-4 text-muted-foreground" />
+              <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                Vista previa
+              </h2>
+            </div>
+            {status === "done" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 text-muted-foreground"
+                onClick={reset}
+              >
+                <RefreshCw className="size-3.5" />
+                Nueva conversión
+              </Button>
+            )}
+          </div>
+
+          <Separator className="my-4" />
+
+          {status === "done" && (result || notebook) ? (
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2">
+                  <CheckCircle2 className="size-5 shrink-0 text-emerald-500" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">Documento listo</p>
+                    <p className="max-w-56 truncate text-xs text-muted-foreground">
+                      {result?.sourceName ?? notebook?.sourceName}
+                    </p>
+                  </div>
+                </div>
                 <Badge variant="secondary" className="font-mono">
                   Pandoc 3.9
                 </Badge>
               </div>
-              {result.warnings.length > 0 && (
-                <Badge variant="outline" className="gap-1">
-                  <TriangleAlert className="size-3" />
-                  {result.warnings.length} aviso
-                  {result.warnings.length > 1 ? "s" : ""}
-                </Badge>
+
+              {result && blobUrl && (
+                <>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {wantHtml && (
+                      <Button
+                        variant="outline"
+                        className="gap-2"
+                        nativeButton={false}
+                        render={
+                          <a
+                            href={blobUrl}
+                            download={result.fileName}
+                            onClick={() => toast.success("Descargando HTML…")}
+                          />
+                        }
+                      >
+                        <Download className="size-4" />
+                        Descargar HTML
+                      </Button>
+                    )}
+                    {wantPdf && (
+                      <Button
+                        variant="outline"
+                        className="gap-2"
+                        onClick={handlePrint}
+                      >
+                        <Printer className="size-4" />
+                        Descargar PDF
+                      </Button>
+                    )}
+                    {wantHtml && (
+                      <Button
+                        variant="ghost"
+                        className="gap-2 text-muted-foreground"
+                        nativeButton={false}
+                        render={
+                          <a href={blobUrl} target="_blank" rel="noreferrer" />
+                        }
+                      >
+                        En pestaña
+                      </Button>
+                    )}
+                  </div>
+
+                  {wantHtml && (
+                    <>
+                      <Separator className="my-5" />
+                      <iframe
+                        title="Vista previa del documento convertido"
+                        src={blobUrl}
+                        className="h-[70vh] w-full rounded-lg border bg-white lg:h-[calc(100vh-24rem)]"
+                      />
+                    </>
+                  )}
+                </>
               )}
+
+              {notebook && (
+                <div className="mt-5">
+                  <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/50 px-4 py-3 text-sm">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Notebook className="size-4 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">
+                          Notebook Jupyter generado
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {notebook.kernel
+                            ? `Kernel detectado: ${notebook.kernel}`
+                            : "Sin kernel detectado (elígelo al abrir)"}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="gap-2"
+                      onClick={downloadNotebook}
+                    >
+                      <Download className="size-4" />
+                      Descargar .ipynb
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : busy ? (
+            <div className="space-y-3">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-[50vh] w-full" />
             </div>
-
-            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {wantHtml && (
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  nativeButton={false}
-                  render={
-                    <a
-                      href={blobUrl}
-                      download={result.fileName}
-                      onClick={() => toast.success("Descargando HTML…")}
-                    />
-                  }
-                >
-                  <Download className="size-4" />
-                  Descargar HTML
-                </Button>
-              )}
-              {wantPdf && (
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  onClick={handlePrint}
-                >
-                  <Printer className="size-4" />
-                  Descargar PDF
-                </Button>
-              )}
-              {wantHtml && (
-                <Button
-                  variant="secondary"
-                  className="gap-2"
-                  nativeButton={false}
-                  render={
-                    <a href={blobUrl} target="_blank" rel="noreferrer" />
-                  }
-                >
-                  Abrir en pestaña
-                </Button>
-              )}
-            </div>
-
-            {result.warnings.length > 0 && (
-              <Alert className="mt-4">
-                <TriangleAlert />
-                <AlertTitle>Avisos de pandoc</AlertTitle>
-                <AlertDescription className="whitespace-pre-line break-words">
-                  {result.warnings.join("\n")}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {wantHtml && (
-              <div className="mt-5">
-                <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                  Vista previa
-                </p>
-                <iframe
-                  title="Vista previa del documento convertido"
-                  src={blobUrl}
-                  className="h-[65vh] w-full rounded-lg border bg-white"
-                />
+          ) : (
+            <div className="flex h-[50vh] flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-border px-6 text-center">
+              <div className="grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">
+                <FileText className="size-6" />
               </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+              <div>
+                <p className="text-sm font-medium">Aún no hay resultado</p>
+                <p className="mx-auto mt-1 max-w-xs text-xs text-muted-foreground">
+                  Convierte tu documento para ver la vista previa aquí, a la
+                  derecha.
+                </p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

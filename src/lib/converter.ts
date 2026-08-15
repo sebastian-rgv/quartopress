@@ -1,20 +1,19 @@
 import { createPandocInstance } from "./pandoc/core.js";
 import type { PandocInstance } from "./pandoc/core.js";
 
-export interface CssFile {
-  name: string;
-  content: string;
-}
-
 export interface ConvertInput {
   source: string;
-  cssFiles: CssFile[];
 }
 
 export interface ConvertedDoc {
   html: string;
   warnings: string[];
   stderr: string;
+}
+
+export interface NotebookResult {
+  json: string;
+  kernel: string | null;
 }
 
 export interface ProgressInfo {
@@ -76,27 +75,6 @@ function prepareQuartoCopy(source: string): string {
   return s;
 }
 
-function inlineCss(html: string, cssFiles: CssFile[]): string {
-  if (cssFiles.length === 0) return html;
-  const blocks = cssFiles.map((f) => `<style>\n${f.content}\n</style>`);
-  for (const f of cssFiles) {
-    const link = new RegExp(
-      `<link[^>]+rel=["']stylesheet["'][^>]+href=["']${f.name.replace(
-        /[.*+?^${}()|[\]\\]/g,
-        "\\$&"
-      )}["'][^>]*>`,
-      "i"
-    );
-    html = html.replace(link, "");
-  }
-  if (blocks.length && /<\/head>/i.test(html)) {
-    html = html.replace(/<\/head>/i, `${blocks.join("\n")}\n</head>`);
-  } else {
-    html = blocks.join("\n") + "\n" + html;
-  }
-  return html;
-}
-
 function addPrintStyles(html: string): string {
   const css = `<style>
 @media print {
@@ -110,6 +88,55 @@ function addPrintStyles(html: string): string {
   return css + "\n" + html;
 }
 
+interface KernelSpec {
+  name: string;
+  displayName: string;
+  language: string;
+}
+
+const KERNELS: Record<string, KernelSpec> = {
+  r: { name: "ir", displayName: "R", language: "R" },
+  python: { name: "python3", displayName: "Python 3", language: "python" },
+  py: { name: "python3", displayName: "Python 3", language: "python" },
+  julia: { name: "julia-1.10", displayName: "Julia 1.10", language: "julia" },
+};
+
+function detectLanguage(source: string): string | null {
+  const m = source.match(/^```\{?\.?([a-zA-Z0-9]+)/m);
+  return m ? m[1].toLowerCase() : null;
+}
+
+function fencesToCodeCells(source: string): string {
+  return source.replace(
+    /^```([^\n]*)\n([\s\S]*?)^```\s*$/gm,
+    (_match, info: string, body: string) => {
+      const lang = info
+        .replace(/^\{/, "")
+        .replace(/\}$/, "")
+        .replace(/^\./, "")
+        .split(/[,;\s]+/)[0]
+        .trim();
+      const cls = lang ? `{.${lang} .code}` : "{.code}";
+      return "```" + cls + "\n" + body + "```";
+    }
+  );
+}
+
+function injectKernelspec(source: string, kernel: KernelSpec): string {
+  const block = `jupyter:
+  kernelspec:
+    display_name: ${kernel.displayName}
+    language: ${kernel.language}
+    name: ${kernel.name}
+`;
+  const fm = source.match(/^---\s*\n([\s\S]*?)\n---\s*\n/);
+  if (fm) {
+    if (/^jupyter\s*:/m.test(fm[1])) return source;
+    return source.replace(/^---\s*\n/, "---\n" + block);
+  }
+  return "---\n" + block + "---\n" + source;
+}
+
 export async function convertDocument(
   input: ConvertInput,
   onProgress?: (p: ProgressInfo) => void
@@ -119,23 +146,15 @@ export async function convertDocument(
 
   const prepared = prepareQuartoCopy(input.source);
 
-  const files: Record<string, string | Blob> = {};
-  for (const css of input.cssFiles) {
-    files[css.name] = css.content;
-  }
-
   const options = {
     from: "markdown",
     to: "html",
     standalone: true,
     "embed-resources": true,
     "html-math-method": "mathml",
-    ...(input.cssFiles.length > 0
-      ? { css: input.cssFiles.map((f) => f.name) }
-      : {}),
   };
 
-  const result = await pandoc.convert(options, prepared, files);
+  const result = await pandoc.convert(options, prepared, {});
 
   if (!result.stdout || result.stdout.trim().length === 0) {
     const message =
@@ -144,7 +163,6 @@ export async function convertDocument(
   }
 
   let html = result.stdout;
-  html = inlineCss(html, input.cssFiles);
   html = addPrintStyles(html);
 
   return {
@@ -152,6 +170,34 @@ export async function convertDocument(
     warnings: (result.warnings ?? []).map((w) => String(w)),
     stderr: result.stderr,
   };
+}
+
+export async function convertNotebook(
+  input: ConvertInput,
+  onProgress?: (p: ProgressInfo) => void
+): Promise<NotebookResult> {
+  const pandoc = await loadPandoc(onProgress);
+  report(onProgress, { loaded: 0, total: 0, phase: "convert" });
+
+  const lang = detectLanguage(input.source);
+  const kernel = lang ? (KERNELS[lang] ?? null) : null;
+
+  let prepared = fencesToCodeCells(input.source);
+  if (kernel) prepared = injectKernelspec(prepared, kernel);
+
+  const result = await pandoc.convert(
+    { from: "markdown", to: "ipynb" },
+    prepared,
+    {}
+  );
+
+  if (!result.stdout || result.stdout.trim().length === 0) {
+    const message =
+      result.stderr.trim() || "Pandoc no produjo salida. Revisa el documento.";
+    throw new Error(message);
+  }
+
+  return { json: result.stdout, kernel: kernel?.name ?? null };
 }
 
 export function formatBytes(bytes: number): string {
