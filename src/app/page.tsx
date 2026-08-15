@@ -33,21 +33,32 @@ export default function Home() {
       />
 
       <header className="relative mx-auto flex w-full max-w-6xl items-center justify-between gap-4 py-8 sm:px-2">
-        <Link
-          href="/"
-          className="group flex items-center gap-2.5 select-none"
-        >
-          <Image
-            src="/logo.png"
-            alt=""
-            width={28}
-            height={28}
-            className="size-7 rounded-[7px] shadow-sm ring-1 ring-black/10 transition-transform duration-200 ease-out group-hover:scale-105 dark:ring-white/15"
-          />
-          <span className="font-display text-2xl leading-none tracking-wide">
-            Quarto<span className="text-accent">Press</span>
+        <div className="flex items-center gap-2 select-none">
+          <a
+            href="https://sebastianrgv.com"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Sebastian Garcia — sebastianrgv.com"
+            className="transition-transform duration-200 ease-out hover:scale-110"
+          >
+            <Image
+              src="/logo.png"
+              alt=""
+              width={20}
+              height={20}
+              className="size-5 rounded-[5px] shadow-sm ring-1 ring-black/10 dark:ring-white/15"
+            />
+          </a>
+          <span className="font-display text-xl leading-none text-muted-foreground/50">
+            /
           </span>
-        </Link>
+          <Link
+            href="/"
+            className="font-display text-xl leading-none tracking-wide transition-opacity hover:opacity-80"
+          >
+            Quarto<span className="text-accent">Press</span>
+          </Link>
+        </div>
         <div className="flex items-center gap-1.5">
           <LanguageToggle />
           <ThemeToggle />
@@ -112,15 +123,23 @@ export default function Home() {
             </a>
             . {t("footerNeverLeaves")}
           </p>
-          <p>
-            {t("footerCreatedBy")}{" "}
+          <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
             <a
               href="https://sebastianrgv.com"
               target="_blank"
               rel="noreferrer"
               className="font-medium underline-offset-2 hover:underline"
             >
-              Sebastian García Villacorta
+              sebastianrgv.com
+            </a>
+            <span aria-hidden>·</span>
+            <a
+              href="https://github.com/sebastian-rgv/quartopress"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium underline-offset-2 hover:underline"
+            >
+              github.com/sebastian-rgv/quartopress
             </a>
           </p>
         </div>
