@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored pandoc wasm wrapper (upstream source).
+    "src/lib/pandoc/core.js",
   ]),
 ]);
 

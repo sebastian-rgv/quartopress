@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# QuartoPress
 
-## Getting Started
+Convierte documentos **Quarto (.qmd)** o **Markdown (.md)** a **HTML** y **PDF**, 100% en tu navegador.
 
-First, run the development server:
+Usa [Pandoc](https://pandoc.org) compilado a WebAssembly (`pandoc-wasm`), por lo que **tu documento nunca sale de tu dispositivo**: no hay servidor, ni subidas a la nube, ni binarios que instalar.
+
+## Funcionalidades
+
+- Arrastra y suelta un `.qmd` / `.md` (más hojas de estilo `.css` opcionales).
+- Conversión local con **pandoc 3.10 (WASM)**: YAML, tablas, pies de página y matemáticas a **MathML** (auto-contenido, sin CDN).
+- Compatibilidad con documentos de Quarto: limpia bloques ejecutables (`{python, echo=FALSE}`), `chalkboard` y temas no embebibles.
+- Genera **HTML** standalone (CSS embebido, listo para compartir).
+- Genera **PDF** con el diálogo de impresión de tu navegador (guardar como PDF), con márgenes A4.
+- Vista previa integrada, avisos de pandoc y modo claro/oscuro.
+
+## Empezar
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> El motor (`pandoc.wasm`, ~58 MB) se sirve desde `public/` y se descarga una sola vez; queda en caché.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+| Comando        | Descripción                  |
+| -------------- | ---------------------------- |
+| `pnpm dev`     | Servidor de desarrollo       |
+| `pnpm build`   | Build de producción          |
+| `pnpm start`   | Sirve el build de producción |
+| `pnpm lint`    | ESLint                       |
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy en Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+La app es **estática** (solo cliente), así que funciona sin configuración en el plan free de Vercel:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+git push origin main
+```
 
-## Deploy on Vercel
+Conecta el repo en [vercel.com](https://vercel.com) → *Import Project*. No se requieren variables de entorno ni funciones serverless.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Stack
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Next.js 16](https://nextjs.org) (App Router, TypeScript)
+- [shadcn/ui](https://ui.shadcn.com) (Base UI)
+- [Tailwind CSS 4](https://tailwindcss.com)
+- [pandoc-wasm](https://github.com/pandoc/pandoc-wasm)
