@@ -10,7 +10,7 @@ import {
   Notebook,
   Printer,
   RefreshCw,
-  Sparkles,
+  Rocket,
   TriangleAlert,
   Upload,
   X,
@@ -240,7 +240,12 @@ export function Converter() {
   const canConvert = docs.length === 1 && (wantHtml || wantPdf || wantIpynb);
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start">
+    <div
+      className={cn(
+        "mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 lg:items-start",
+        status !== "idle" && "lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
+      )}
+    >
       {/* Form */}
       <Card className="shadow-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 ease-out hover:-translate-y-px hover:shadow-lg hover:shadow-black/5 dark:ring-white/10">
         <CardContent className="p-6 sm:p-8">
@@ -416,7 +421,7 @@ export function Converter() {
               </>
             ) : (
               <>
-                <Sparkles className="size-4" />
+                <Rocket className="size-4" />
                 {t("convertButton")}
               </>
             )}
@@ -470,8 +475,9 @@ export function Converter() {
       </Card>
 
       {/* Preview */}
-      <Card className="shadow-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 ease-out hover:-translate-y-px hover:shadow-lg hover:shadow-black/5 lg:sticky lg:top-6 dark:ring-white/10">
-        <CardContent className="p-6 sm:p-8">
+      {status !== "idle" && (
+        <Card className="shadow-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 ease-out hover:-translate-y-px hover:shadow-lg hover:shadow-black/5 lg:sticky lg:top-6 dark:ring-white/10">
+          <CardContent className="p-6 sm:p-8">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <div className="grid size-6 place-items-center rounded-md bg-accent/10 text-accent">
@@ -624,7 +630,8 @@ export function Converter() {
             </div>
           )}
         </CardContent>
-      </Card>
+        </Card>
+      )}
     </div>
   );
 }
