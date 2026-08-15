@@ -129,7 +129,7 @@ export async function convertDocument(
     to: "html",
     standalone: true,
     "embed-resources": true,
-    mathml: true,
+    "html-math-method": "mathml",
     ...(input.cssFiles.length > 0
       ? { css: input.cssFiles.map((f) => f.name) }
       : {}),
