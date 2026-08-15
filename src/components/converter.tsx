@@ -25,6 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useI18n } from "@/components/language-provider";
 import { cn } from "@/lib/utils";
 import {
   convertDocument,
@@ -53,20 +54,20 @@ const DOC_RE = /\.(qmd|md)$/i;
 const FORMATS = [
   {
     id: "html",
-    name: "HTML",
-    description: "Página autónoma con MathML",
+    nameKey: "formatHtmlName",
+    descriptionKey: "formatHtmlDesc",
     icon: FileText,
   },
   {
     id: "pdf",
-    name: "PDF",
-    description: "Imprimir → guardar como PDF",
+    nameKey: "formatPdfName",
+    descriptionKey: "formatPdfDesc",
     icon: Printer,
   },
   {
     id: "ipynb",
-    name: "Notebook .ipynb",
-    description: "Con kernel R, Python o Julia",
+    nameKey: "formatIpynbName",
+    descriptionKey: "formatIpynbDesc",
     icon: Notebook,
   },
 ] as const;
@@ -74,6 +75,7 @@ const FORMATS = [
 type FormatId = (typeof FORMATS)[number]["id"];
 
 export function Converter() {
+  const { t } = useI18n();
   const [files, setFiles] = useState<File[]>([]);
   const [wantHtml, setWantHtml] = useState(true);
   const [wantPdf, setWantPdf] = useState(true);
@@ -178,17 +180,17 @@ export function Converter() {
       }
 
       setStatus("done");
-      toast.success("Documento convertido", {
-        description: "Listo para previsualizar y descargar.",
+      toast.success(t("toastConverted"), {
+        description: t("toastConvertedDesc"),
       });
     } catch (e) {
       const message =
-        e instanceof Error ? e.message : "Ocurrió un error inesperado.";
+        e instanceof Error ? e.message : t("unexpectedError");
       setError(message);
       setStatus("error");
-      toast.error("No se pudo convertir", { description: message });
+      toast.error(t("toastConvertFailed"), { description: message });
     }
-  }, [docs, blobUrl, wantHtml, wantPdf, wantIpynb]);
+  }, [docs, blobUrl, wantHtml, wantPdf, wantIpynb, t]);
 
   const handlePrint = useCallback(() => {
     if (!blobUrl) return;
@@ -227,8 +229,8 @@ export function Converter() {
     a.download = notebook.fileName;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 10_000);
-    toast.success("Descargando notebook…");
-  }, [notebook]);
+    toast.success(t("toastDownloadingNotebook"));
+  }, [notebook, t]);
 
   const busy = status === "working";
   const downloadPct =
@@ -246,7 +248,7 @@ export function Converter() {
           <div
             role="button"
             tabIndex={0}
-            aria-label="Subir documento .qmd o .md"
+            aria-label={t("dropzoneAria")}
             onClick={() => inputRef.current?.click()}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
@@ -293,11 +295,9 @@ export function Converter() {
               <Upload className="size-6" />
             </div>
             <div>
-              <p className="text-sm font-semibold">
-                Arrastra tu documento aquí
-              </p>
+              <p className="text-sm font-semibold">{t("dropzoneTitle")}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                o haz clic para seleccionar archivos
+                {t("dropzoneSubtitle")}
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-1.5">
@@ -325,12 +325,12 @@ export function Converter() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{f.name}</p>
                     <p className="text-[11px] text-muted-foreground">
-                      Documento · {formatBytes(f.size)}
+                      {t("fileMeta", { size: formatBytes(f.size) })}
                     </p>
                   </div>
                   <button
                     type="button"
-                    aria-label={`Quitar ${f.name}`}
+                    aria-label={t("removeFile", { name: f.name })}
                     className="grid size-6 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-black/10 hover:text-foreground dark:hover:bg-white/10"
                     onClick={() => removeFile(f.name)}
                   >
@@ -346,12 +346,14 @@ export function Converter() {
           {/* Format selection */}
           <div>
             <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              Formato de salida
+              {t("outputFormat")}
             </p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {FORMATS.map(({ id, name, description, icon: Icon }) => {
+              {FORMATS.map(({ id, nameKey, descriptionKey, icon: Icon }) => {
                 const active = selected[id];
                 const spanFull = id === "ipynb";
+                const name = t(nameKey);
+                const description = t(descriptionKey);
                 return (
                   <label
                     key={id}
@@ -366,7 +368,7 @@ export function Converter() {
                     <Checkbox
                       checked={active}
                       onCheckedChange={(v) => toggleFormat(id, Boolean(v))}
-                      aria-label={`Generar ${name}`}
+                      aria-label={t("generateFormat", { name })}
                       className="absolute top-4 right-4 opacity-0 focus-visible:opacity-100 data-checked:border-accent data-checked:bg-accent"
                     />
                     <CheckCircle2
@@ -396,8 +398,7 @@ export function Converter() {
               })}
             </div>
             <p className="mt-3 text-xs leading-relaxed text-pretty text-muted-foreground">
-              El PDF se genera con tu navegador (imprimir → guardar como PDF).
-              El notebook detecta R, Python o Julia en los chunks de código.
+              {t("formatNote")}
             </p>
           </div>
 
@@ -411,19 +412,19 @@ export function Converter() {
             {busy ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                Convirtiendo…
+                {t("convertingButton")}
               </>
             ) : (
               <>
                 <Sparkles className="size-4" />
-                Convertir
+                {t("convertButton")}
               </>
             )}
           </Button>
 
           {docs.length !== 1 && files.length > 0 && (
             <p className="mt-2 text-center text-xs text-destructive">
-              Selecciona exactamente un archivo .qmd o .md.
+              {t("singleFileRequired")}
             </p>
           )}
 
@@ -433,7 +434,7 @@ export function Converter() {
               {progress?.phase === "download" && downloadPct !== null ? (
                 <>
                   <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Descargando motor pandoc…</span>
+                    <span>{t("downloadEngine")}</span>
                     <span className="font-mono tabular-nums">
                       {formatBytes(progress.loaded)}
                       {progress.total > 0 && ` / ${formatBytes(progress.total)}`}
@@ -441,13 +442,13 @@ export function Converter() {
                   </div>
                   <Progress value={downloadPct} indicatorClassName="bg-accent" />
                   <p className="mt-1.5 text-[11px] text-muted-foreground">
-                    Se descarga una sola vez y queda en caché.
+                    {t("downloadOnceNote")}
                   </p>
                 </>
               ) : (
                 <>
                   <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Convirtiendo documento…</span>
+                    <span>{t("convertingDoc")}</span>
                   </div>
                   <div className="h-1 w-full animate-pulse rounded-full bg-accent/70" />
                 </>
@@ -459,7 +460,7 @@ export function Converter() {
           {status === "error" && error && (
             <Alert variant="destructive" className="mt-4">
               <TriangleAlert />
-              <AlertTitle>No se pudo convertir</AlertTitle>
+              <AlertTitle>{t("convertFailedTitle")}</AlertTitle>
               <AlertDescription className="break-words">
                 {error}
               </AlertDescription>
@@ -477,7 +478,7 @@ export function Converter() {
                 <FileText className="size-3.5" />
               </div>
               <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                Vista previa
+                {t("previewTitle")}
               </h2>
             </div>
             {status === "done" && (
@@ -488,7 +489,7 @@ export function Converter() {
                 onClick={reset}
               >
                 <RefreshCw className="size-3.5" />
-                Nueva conversión
+                {t("newConversion")}
               </Button>
             )}
           </div>
@@ -501,7 +502,7 @@ export function Converter() {
                 <div className="flex min-w-0 items-center gap-2">
                   <CheckCircle2 className="size-5 shrink-0 text-accent" />
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold">Documento listo</p>
+                    <p className="text-sm font-semibold">{t("documentReady")}</p>
                     <p className="max-w-56 truncate text-xs text-muted-foreground">
                       {result?.sourceName ?? notebook?.sourceName}
                     </p>
@@ -528,12 +529,12 @@ export function Converter() {
                           <a
                             href={blobUrl}
                             download={result.fileName}
-                            onClick={() => toast.success("Descargando HTML…")}
+                            onClick={() => toast.success(t("toastDownloadingHtml"))}
                           />
                         }
                       >
                         <Download className="size-4" />
-                        Descargar HTML
+                        {t("downloadHtml")}
                       </Button>
                     )}
                     {wantPdf && (
@@ -543,7 +544,7 @@ export function Converter() {
                         onClick={handlePrint}
                       >
                         <Printer className="size-4" />
-                        Descargar PDF
+                        {t("downloadPdf")}
                       </Button>
                     )}
                     {wantHtml && (
@@ -555,7 +556,7 @@ export function Converter() {
                           <a href={blobUrl} target="_blank" rel="noreferrer" />
                         }
                       >
-                        En pestaña
+                        {t("openInTab")}
                       </Button>
                     )}
                   </div>
@@ -564,7 +565,7 @@ export function Converter() {
                     <>
                       <Separator className="my-5" />
                       <iframe
-                        title="Vista previa del documento convertido"
+                        title={t("previewFrameTitle")}
                         src={blobUrl}
                         className="h-[70vh] w-full rounded-xl border bg-white shadow-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:h-[calc(100vh-24rem)] dark:ring-1 dark:ring-white/10"
                       />
@@ -580,12 +581,12 @@ export function Converter() {
                       <Notebook className="size-4 shrink-0 text-muted-foreground" />
                       <div className="min-w-0">
                         <p className="truncate font-medium">
-                          Notebook Jupyter generado
+                          {t("notebookGenerated")}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {notebook.kernel
-                            ? `Kernel detectado: ${notebook.kernel}`
-                            : "Sin kernel detectado (elígelo al abrir)"}
+                            ? t("kernelDetected", { kernel: notebook.kernel })
+                            : t("noKernel")}
                         </p>
                       </div>
                     </div>
@@ -595,7 +596,7 @@ export function Converter() {
                       onClick={downloadNotebook}
                     >
                       <Download className="size-4" />
-                      Descargar .ipynb
+                      {t("downloadIpynb")}
                     </Button>
                   </div>
                 </div>
@@ -614,11 +615,10 @@ export function Converter() {
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-balance">
-                  Aún no hay resultado
+                  {t("previewEmptyTitle")}
                 </p>
                 <p className="mx-auto max-w-xs text-xs leading-relaxed text-pretty text-muted-foreground">
-                  Convierte tu documento para ver la vista previa aquí, a la
-                  derecha.
+                  {t("previewEmptyBody")}
                 </p>
               </div>
             </div>

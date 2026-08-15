@@ -1,18 +1,26 @@
-import { Cpu, Languages, ShieldCheck } from "lucide-react";
+"use client";
+
+import { Cpu, Languages, ShieldCheck, type LucideIcon } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
+import { useI18n } from "@/components/language-provider";
+import { LanguageToggle } from "@/components/language-toggle";
 import { Converter } from "@/components/converter";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import type { I18nKey } from "@/lib/i18n";
 
-const FEATURES = [
-  { icon: ShieldCheck, label: "100% local" },
-  { icon: Cpu, label: "Pandoc 3.x · WASM" },
-  { icon: Languages, label: "R · Python · Julia" },
+const FEATURES: { icon: LucideIcon; labelKey: I18nKey }[] = [
+  { icon: ShieldCheck, labelKey: "featureLocal" },
+  { icon: Cpu, labelKey: "featurePandoc" },
+  { icon: Languages, labelKey: "featureRuntimes" },
 ];
 
 export default function Home() {
+  const { t } = useI18n();
+
   return (
     <div className="relative flex flex-1 flex-col overflow-hidden bg-gradient-to-b from-zinc-50 via-white to-white px-4 dark:from-zinc-900 dark:via-zinc-950 dark:to-zinc-950">
       <div
@@ -27,11 +35,23 @@ export default function Home() {
       <header className="relative mx-auto flex w-full max-w-6xl items-center justify-between gap-4 py-8 sm:px-2">
         <Link
           href="/"
-          className="font-display text-2xl leading-none tracking-wide select-none"
+          className="group flex items-center gap-2.5 select-none"
         >
-          Quarto<span className="text-accent">Press</span>
+          <Image
+            src="/logo.png"
+            alt=""
+            width={28}
+            height={28}
+            className="size-7 rounded-[7px] shadow-sm ring-1 ring-black/10 transition-transform duration-200 ease-out group-hover:scale-105 dark:ring-white/15"
+          />
+          <span className="font-display text-2xl leading-none tracking-wide">
+            Quarto<span className="text-accent">Press</span>
+          </span>
         </Link>
-        <ThemeToggle />
+        <div className="flex items-center gap-1.5">
+          <LanguageToggle />
+          <ThemeToggle />
+        </div>
       </header>
 
       <main className="relative mx-auto w-full max-w-6xl flex-1 sm:px-2">
@@ -41,7 +61,7 @@ export default function Home() {
             className="mb-5 h-auto rounded-full border-zinc-300 bg-transparent px-3.5 py-1 font-display text-[13px] tracking-[0.14em] text-muted-foreground uppercase dark:border-zinc-700"
           >
             <span className="size-1.5 rounded-full bg-accent" />
-            Quarto · Markdown · Pandoc · WASM
+            {t("badgeEyebrow")}
           </Badge>
 
           <h1 className="font-display text-5xl leading-[1.05] tracking-tight text-balance sm:text-7xl">
@@ -49,27 +69,26 @@ export default function Home() {
           </h1>
 
           <p className="mt-5 max-w-xl text-base leading-relaxed text-pretty text-muted-foreground sm:text-lg">
-            Convierte documentos{" "}
+            {t("heroSubtitleBefore")}{" "}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em] text-foreground">
               .qmd
             </code>{" "}
-            y{" "}
+            {t("heroSubtitleAnd")}{" "}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em] text-foreground">
               .md
             </code>{" "}
-            a HTML, PDF o notebooks Jupyter. Todo corre con Pandoc en tu
-            navegador, sin subir nada a la nube.
+            {t("heroSubtitleAfter")}
           </p>
 
           <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5">
-            {FEATURES.map(({ icon: Icon, label }) => (
+            {FEATURES.map(({ icon: Icon, labelKey }) => (
               <Badge
-                key={label}
+                key={labelKey}
                 variant="secondary"
                 className="h-auto gap-1.5 rounded-full px-3 py-1 font-display text-sm tracking-wide text-foreground/80"
               >
                 <Icon className="size-3.5 text-accent" />
-                {label}
+                {t(labelKey)}
               </Badge>
             ))}
           </div>
@@ -82,7 +101,7 @@ export default function Home() {
         <Separator className="mx-auto mb-6 max-w-2xl" />
         <div className="flex flex-col items-center gap-1.5 px-4 text-center text-xs leading-relaxed text-muted-foreground">
           <p>
-            Conversión local en tu navegador con{" "}
+            {t("footerPandocIntro")}{" "}
             <a
               href="https://pandoc.org"
               target="_blank"
@@ -91,10 +110,10 @@ export default function Home() {
             >
               Pandoc
             </a>
-            . Tu documento nunca sale de tu dispositivo.
+            . {t("footerNeverLeaves")}
           </p>
           <p>
-            Creado por{" "}
+            {t("footerCreatedBy")}{" "}
             <a
               href="https://sebastianrgv.com"
               target="_blank"

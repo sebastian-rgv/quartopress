@@ -1,48 +1,52 @@
 # QuartoPress
 
-> Convierte **Quarto (.qmd)** y **Markdown (.md)** a **HTML**, **PDF** y **notebooks Jupyter (.ipynb)**, 100% en tu navegador.
+> Convert **Quarto (.qmd)** and **Markdown (.md)** documents to **HTML**, **PDF**, and **Jupyter notebooks (.ipynb)**, 100% in your browser.
 
-Usa [Pandoc](https://pandoc.org) compilado a WebAssembly (`pandoc-wasm`), así que **tu documento nunca sale de tu dispositivo**: no hay servidor, ni subidas a la nube, ni binarios que instalar.
+It uses [Pandoc](https://pandoc.org) compiled to WebAssembly (`pandoc-wasm`), so **your document never leaves your device**: no server, no cloud uploads, and no binaries to install.
 
-## Funcionalidades
+## Features
 
-- Arrastra y suelta un `.qmd` / `.md` y convierte al instante.
-- Conversión local con **pandoc 3.10 (WASM)**: YAML, tablas, pies de página y matemáticas a **MathML** (auto-contenido, sin CDN).
-- Compatibilidad con documentos de Quarto: limpia bloques ejecutables (`{python, echo=FALSE}`), `chalkboard` y temas no embebibles.
-- Genera **HTML** standalone (CSS embebido, listo para compartir).
-- Genera **PDF** con el diálogo de impresión de tu navegador (guardar como PDF), con márgenes A4.
-- Genera **notebooks Jupyter (.ipynb)**: los chunks de código se vuelven celdas y el kernel se detecta automáticamente (**R**, **Python** o **Julia**) a partir del primer chunk (o respeta tu `jupyter:` en el YAML).
-- Vista previa integrada y modo claro/oscuro.
+- Drag and drop a `.qmd` / `.md` and convert it instantly.
+- Local conversion with **pandoc 3.10 (WASM)**: YAML, tables, footnotes, and math to **MathML** (self-contained, no CDN).
+- Quarto document compatibility: cleans executable chunks (`{python, echo=FALSE}`), `chalkboard`, and non-embeddable themes.
+- Generates **standalone HTML** (embedded CSS, ready to share).
+- Generates **PDF** through your browser's print dialog (save as PDF), with A4 margins.
+- Generates **Jupyter notebooks (.ipynb)**: code chunks become cells and the kernel is detected automatically (**R**, **Python**, or **Julia**) from the first chunk (or respects your `jupyter:` YAML).
+- Built-in preview and light/dark mode.
 
-## Empezar
+## Language
+
+The UI is in **English** by default, with an **EN/ES** toggle in the header to switch between English and Spanish. Your choice is remembered for the next visit.
+
+## Getting started
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Abre [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000).
 
-> El motor (`pandoc.wasm`, ~58 MB) se sirve desde `public/` y se descarga una sola vez; queda en caché en tu navegador.
+> The engine (`pandoc.wasm`, ~58 MB) is served from `public/` and downloads only once; it stays cached in your browser.
 
 ## Scripts
 
-| Comando        | Descripción                  |
-| -------------- | ---------------------------- |
-| `pnpm dev`     | Servidor de desarrollo       |
-| `pnpm build`   | Build de producción          |
-| `pnpm start`   | Sirve el build de producción |
-| `pnpm lint`    | ESLint                       |
+| Command       | Description                |
+| ------------- | -------------------------- |
+| `pnpm dev`    | Development server         |
+| `pnpm build`  | Production build           |
+| `pnpm start`  | Serve the production build |
+| `pnpm lint`   | ESLint                     |
 
-## Deploy en Vercel
+## Deploy on Vercel
 
-La app es **estática** (solo cliente), así que funciona sin configuración en el plan free de Vercel:
+The app is **static** (client-side only), so it works out of the box on Vercel's free plan:
 
 ```bash
 git push origin main
 ```
 
-Conecta el repo en [vercel.com](https://vercel.com) → *Import Project*. No se requieren variables de entorno ni funciones serverless.
+Connect the repo at [vercel.com](https://vercel.com) → *Import Project*. No environment variables or serverless functions are required.
 
 ## Stack
 
@@ -51,6 +55,6 @@ Conecta el repo en [vercel.com](https://vercel.com) → *Import Project*. No se 
 - [Tailwind CSS 4](https://tailwindcss.com)
 - [pandoc-wasm](https://github.com/pandoc/pandoc-wasm)
 
-## Autor
+## Author
 
-Creado por [Sebastian García Villacorta](https://sebastianrgv.com).
+Created by [Sebastian García Villacorta](https://sebastianrgv.com).

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, VT323 } from "next/font/google";
 
+import { LanguageProvider } from "@/components/language-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { DEFAULT_LANG } from "@/lib/i18n";
 
 import "./globals.css";
 
@@ -18,15 +20,18 @@ const vt323 = VT323({
 });
 
 export const metadata: Metadata = {
-  title: "QuartoPress — Convierte .qmd y .md a HTML",
+  title: "QuartoPress — Convert .qmd and .md to HTML",
   description:
-    "Convierte documentos Quarto (.qmd) o Markdown (.md) a HTML y PDF, 100% en tu navegador con Pandoc.",
+    "Convert Quarto (.qmd) or Markdown (.md) documents to HTML and PDF, 100% in your browser with Pandoc.",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="es"
+      lang={DEFAULT_LANG}
       suppressHydrationWarning
       className={`${geist.variable} ${vt323.variable} h-full antialiased`}
     >
@@ -37,8 +42,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           enableSystem
           disableTransitionOnChange
         >
-          {children}
-          <Toaster richColors position="top-center" />
+          <LanguageProvider>
+            {children}
+            <Toaster richColors position="top-center" />
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>
