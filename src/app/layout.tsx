@@ -20,7 +20,7 @@ const vt323 = VT323({
 });
 
 export const metadata: Metadata = {
-  title: "QuartoPress — Convert .qmd and .md to HTML",
+  title: "QuartoPress",
   description:
     "Convert Quarto (.qmd) or Markdown (.md) documents to HTML and PDF, 100% in your browser with Pandoc.",
   icons: {
