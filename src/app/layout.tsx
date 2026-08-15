@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   description:
     "Convert Quarto (.qmd) or Markdown (.md) documents to HTML and PDF, 100% in your browser with Pandoc.",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/fav.ico",
   },
 };
 
