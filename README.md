@@ -2,6 +2,8 @@
 
 > Convert **Quarto (.qmd)** and **Markdown (.md)** documents to **HTML**, **PDF**, and **Jupyter notebooks (.ipynb)**, 100% in your browser.
 
+**Live at [quartopress.lat](https://quartopress.lat)**
+
 It uses [Pandoc](https://pandoc.org) compiled to WebAssembly (`pandoc-wasm`), so **your document never leaves your device**: no server, no cloud uploads, and no binaries to install.
 
 ## Features

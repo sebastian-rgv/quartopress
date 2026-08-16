@@ -23,9 +23,6 @@ export const metadata: Metadata = {
   title: "QuartoPress",
   description:
     "Convert Quarto (.qmd) or Markdown (.md) documents to HTML and PDF, 100% in your browser with Pandoc.",
-  icons: {
-     icon: "/favicon.ico",
-  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
