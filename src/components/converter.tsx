@@ -565,6 +565,16 @@ export function Converter() {
                         {t("openInTab")}
                       </Button>
                     )}
+                    {notebook && (
+                      <Button
+                        variant="outline"
+                        className="gap-2"
+                        onClick={downloadNotebook}
+                      >
+                        <Download className="size-4" />
+                        {t("downloadIpynb")}
+                      </Button>
+                    )}
                   </div>
 
                   {wantHtml && (

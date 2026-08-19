@@ -104,12 +104,35 @@ pre code {
   padding: 0;
   white-space: pre;
 }
+/* Sintaxis: colores fuertes (clases de pandoc/pygments) */
+.sourceCode .kw { color: #a626a4; font-weight: 600; }
+.sourceCode .fu { color: #0550ae; }
+.sourceCode .st { color: #116329; }
+.sourceCode .dv, .sourceCode .fl { color: #b35900; }
+.sourceCode .co, .sourceCode .ch, .sourceCode .c1 { color: #6e7781; font-style: italic; }
+.sourceCode .cn { color: #953800; }
+.sourceCode .ot { color: #8250df; }
+.sourceCode .at { color: #953800; }
+.sourceCode .sc { color: #0550ae; }
+.sourceCode .dt { color: #116329; }
+.sourceCode .er { color: #cf222e; font-weight: 600; }
 @media (prefers-color-scheme: dark) {
   pre {
-    background: #1e1e1e;
-    border-color: #3d3d3d;
-    color: #e0e0e0;
+    background: #161b22;
+    border-color: #30363d;
+    color: #e6edf3;
   }
+  .sourceCode .kw { color: #ff7b72; }
+  .sourceCode .fu { color: #79c0ff; }
+  .sourceCode .st { color: #a5d6ff; }
+  .sourceCode .dv, .sourceCode .fl { color: #f2cc60; }
+  .sourceCode .co, .sourceCode .ch, .sourceCode .c1 { color: #8b949e; }
+  .sourceCode .cn { color: #ffa657; }
+  .sourceCode .ot { color: #d2a8ff; }
+  .sourceCode .at { color: #ffa657; }
+  .sourceCode .sc { color: #79c0ff; }
+  .sourceCode .dt { color: #a5d6ff; }
+  .sourceCode .er { color: #ff7b72; }
 }
 @media print {
   @page { size: A4; margin: 2cm; }
@@ -123,6 +146,13 @@ pre code {
     word-wrap: break-word;
   }
   pre code { white-space: pre-wrap; }
+  .sourceCode .kw { color: #a626a4 !important; }
+  .sourceCode .fu { color: #0550ae !important; }
+  .sourceCode .st { color: #116329 !important; }
+  .sourceCode .dv, .sourceCode .fl { color: #b35900 !important; }
+  .sourceCode .co, .sourceCode .ch, .sourceCode .c1 { color: #6e7781 !important; }
+  .sourceCode .cn { color: #953800 !important; }
+  .sourceCode .ot { color: #8250df !important; }
 }
 </style>`;
   if (/<\/head>/i.test(html)) {
