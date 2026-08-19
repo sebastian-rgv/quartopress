@@ -193,7 +193,7 @@ export function Converter() {
   }, [docs, blobUrl, wantHtml, wantPdf, wantIpynb, t]);
 
   const handlePrint = useCallback(() => {
-    if (!blobUrl) return;
+    if (!blobUrl || !result) return;
     const iframe = document.createElement("iframe");
     iframe.style.position = "fixed";
     iframe.style.right = "0";
@@ -204,12 +204,18 @@ export function Converter() {
     document.body.appendChild(iframe);
     iframe.src = blobUrl;
     iframe.onload = () => {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
+      const win = iframe.contentWindow;
+      if (win) {
+        // El PDF impreso toma el <title> del documento: lo igualamos al
+        // nombre del archivo fuente para que no salga como "QuartoPress.pdf".
+        win.document.title = result.fileName.replace(/\.html$/i, "");
+        win.focus();
+        win.print();
+      }
       setTimeout(() => iframe.remove(), 120_000);
     };
     iframe.onerror = () => iframe.remove();
-  }, [blobUrl]);
+  }, [blobUrl, result]);
 
   const reset = useCallback(() => {
     setStatus("idle");
