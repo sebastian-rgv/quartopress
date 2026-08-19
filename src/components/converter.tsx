@@ -2,12 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Archive,
   CheckCircle2,
   Download,
   ExternalLink,
   FileCode,
-  FileDown,
   FileText,
   Loader2,
   Notebook,
@@ -36,8 +34,6 @@ import {
   formatBytes,
   type ProgressInfo,
 } from "@/lib/converter";
-import { buildZip } from "@/lib/zip";
-import { htmlToPdfBlob } from "@/lib/pdf";
 
 type Status = "idle" | "working" | "done" | "error";
 
@@ -252,63 +248,6 @@ export function Converter() {
     setTimeout(() => URL.revokeObjectURL(url), 10_000);
     toast.success(t("toastDownloadingNotebook"));
   }, [notebook, t]);
-
-  const [zipping, setZipping] = useState(false);
-
-  const downloadAllZip = useCallback(async () => {
-    if (!result && !notebook) return;
-    setZipping(true);
-    try {
-      const files: { name: string; content: string | Uint8Array }[] = [];
-      if (result) files.push({ name: result.fileName, content: result.html });
-      if (notebook) files.push({ name: notebook.fileName, content: notebook.json });
-      if (result && wantPdf) {
-        try {
-          const pdfBlob = await htmlToPdfBlob(result.html);
-          files.push({
-            name: result.fileName.replace(/\.html$/i, ".pdf"),
-            content: new Uint8Array(await pdfBlob.arrayBuffer()),
-          });
-        } catch {
-          toast.error(t("toastPdfFailed"));
-        }
-      }
-      const zip = buildZip(files);
-      const url = URL.createObjectURL(zip);
-      const baseName = (result?.fileName ?? notebook?.fileName ?? "documento")
-        .replace(/\.(html|ipynb)$/i, "");
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${baseName}.zip`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 10_000);
-      toast.success(t("toastDownloadingZip"));
-    } finally {
-      setZipping(false);
-    }
-  }, [result, notebook, wantPdf, t]);
-
-  const [generatingPdf, setGeneratingPdf] = useState(false);
-
-  const downloadPdfFile = useCallback(async () => {
-    if (!result) return;
-    setGeneratingPdf(true);
-    try {
-      toast.success(t("toastGeneratingPdf"));
-      const blob = await htmlToPdfBlob(result.html);
-      const url = URL.createObjectURL(blob);
-      const baseName = result.fileName.replace(/\.html$/i, "");
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${baseName}.pdf`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 10_000);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : t("unexpectedError"));
-    } finally {
-      setGeneratingPdf(false);
-    }
-  }, [result, t]);
 
   const busy = status === "working";
   const downloadPct =
@@ -605,7 +544,7 @@ export function Converter() {
                 {result && (
                   <Button
                     variant="outline"
-                    className="size-10 p-0"
+                    className="gap-2"
                     title={t("downloadHtml")}
                     aria-label={t("downloadHtml")}
                     nativeButton={false}
@@ -618,39 +557,37 @@ export function Converter() {
                     }
                   >
                     <Download className="size-4" />
+                    {t("downloadHtml")}
                   </Button>
                 )}
                 {result && wantPdf && (
                   <Button
                     variant="outline"
-                    className="size-10 p-0"
-                    title={t("downloadPdfFile")}
-                    aria-label={t("downloadPdfFile")}
-                    onClick={downloadPdfFile}
-                    disabled={generatingPdf}
-                  >
-                    {generatingPdf ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <FileDown className="size-4" />
-                    )}
-                  </Button>
-                )}
-                {result && wantPdf && (
-                  <Button
-                    variant="outline"
-                    className="size-10 p-0"
+                    className="gap-2"
                     title={t("downloadPdf")}
                     aria-label={t("downloadPdf")}
                     onClick={handlePrint}
                   >
                     <Printer className="size-4" />
+                    {t("downloadPdf")}
+                  </Button>
+                )}
+                {notebook && (
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    title={t("downloadIpynb")}
+                    aria-label={t("downloadIpynb")}
+                    onClick={downloadNotebook}
+                  >
+                    <Notebook className="size-4" />
+                    {t("downloadIpynb")}
                   </Button>
                 )}
                 {result && (
                   <Button
                     variant="ghost"
-                    className="size-10 p-0 text-muted-foreground"
+                    className="gap-2 text-muted-foreground"
                     title={t("openInTab")}
                     aria-label={t("openInTab")}
                     nativeButton={false}
@@ -663,32 +600,7 @@ export function Converter() {
                     }
                   >
                     <ExternalLink className="size-4" />
-                  </Button>
-                )}
-                {notebook && (
-                  <Button
-                    variant="outline"
-                    className="size-10 p-0"
-                    title={t("downloadIpynb")}
-                    aria-label={t("downloadIpynb")}
-                    onClick={downloadNotebook}
-                  >
-                    <Notebook className="size-4" />
-                  </Button>
-                )}
-                {(result || notebook) && (
-                  <Button
-                    className="size-10 p-0"
-                    title={t("downloadAllZip")}
-                    aria-label={t("downloadAllZip")}
-                    onClick={downloadAllZip}
-                    disabled={zipping}
-                  >
-                    {zipping ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <Archive className="size-4" />
-                    )}
+                    {t("openInTab")}
                   </Button>
                 )}
               </div>
