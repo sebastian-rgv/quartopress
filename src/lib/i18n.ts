@@ -54,6 +54,7 @@ const en = {
   toastConvertFailed: "Could not convert",
   toastDownloadingNotebook: "Downloading notebook…",
   toastDownloadingHtml: "Downloading HTML…",
+  toastDownloadingZip: "Downloading ZIP…",
 
   previewTitle: "Preview",
   newConversion: "New conversion",
@@ -61,6 +62,7 @@ const en = {
   downloadHtml: "Download HTML",
   downloadPdf: "Download PDF",
   downloadIpynb: "Download .ipynb",
+  downloadAllZip: "Download all (.zip)",
   openInTab: "Open in tab",
   previewFrameTitle: "Preview of the converted document",
 
@@ -126,6 +128,7 @@ const es = {
   toastConvertFailed: "No se pudo convertir",
   toastDownloadingNotebook: "Descargando notebook…",
   toastDownloadingHtml: "Descargando HTML…",
+  toastDownloadingZip: "Descargando ZIP…",
 
   previewTitle: "Vista previa",
   newConversion: "Nueva conversión",
@@ -133,6 +136,7 @@ const es = {
   downloadHtml: "Descargar HTML",
   downloadPdf: "Descargar PDF",
   downloadIpynb: "Descargar .ipynb",
+  downloadAllZip: "Descargar todo (.zip)",
   openInTab: "En pestaña",
   previewFrameTitle: "Vista previa del documento convertido",
 

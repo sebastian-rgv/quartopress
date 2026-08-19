@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Archive,
   CheckCircle2,
   Download,
+  ExternalLink,
   FileCode,
   FileText,
   Loader2,
@@ -33,6 +35,7 @@ import {
   formatBytes,
   type ProgressInfo,
 } from "@/lib/converter";
+import { buildZip } from "@/lib/zip";
 
 type Status = "idle" | "working" | "done" | "error";
 
@@ -247,6 +250,23 @@ export function Converter() {
     setTimeout(() => URL.revokeObjectURL(url), 10_000);
     toast.success(t("toastDownloadingNotebook"));
   }, [notebook, t]);
+
+  const downloadAllZip = useCallback(() => {
+    if (!result && !notebook) return;
+    const files: { name: string; content: string }[] = [];
+    if (result) files.push({ name: result.fileName, content: result.html });
+    if (notebook) files.push({ name: notebook.fileName, content: notebook.json });
+    const zip = buildZip(files);
+    const url = URL.createObjectURL(zip);
+    const baseName = (result?.fileName ?? notebook?.fileName ?? "documento")
+      .replace(/\.(html|ipynb)$/i, "");
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${baseName}.zip`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    toast.success(t("toastDownloadingZip"));
+  }, [result, notebook, t]);
 
   const busy = status === "working";
   const downloadPct =
@@ -539,70 +559,85 @@ export function Converter() {
                 </Badge>
               </div>
 
-              {result && blobUrl && (
-                <>
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    {wantHtml && (
-                      <Button
-                        variant="outline"
-                        className="gap-2"
-                        nativeButton={false}
-                        render={
-                          <a
-                            href={blobUrl}
-                            download={result.fileName}
-                            onClick={() => toast.success(t("toastDownloadingHtml"))}
-                          />
-                        }
-                      >
-                        <Download className="size-4" />
-                        {t("downloadHtml")}
-                      </Button>
-                    )}
-                    {wantPdf && (
-                      <Button
-                        variant="outline"
-                        className="gap-2"
-                        onClick={handlePrint}
-                      >
-                        <Printer className="size-4" />
-                        {t("downloadPdf")}
-                      </Button>
-                    )}
-                    {wantHtml && (
-                      <Button
-                        variant="ghost"
-                        className="gap-2 text-muted-foreground"
-                        nativeButton={false}
-                        render={
-                          <a href={blobUrl} target="_blank" rel="noreferrer" />
-                        }
-                      >
-                        {t("openInTab")}
-                      </Button>
-                    )}
-                    {notebook && (
-                      <Button
-                        variant="outline"
-                        className="gap-2"
-                        onClick={downloadNotebook}
-                      >
-                        <Download className="size-4" />
-                        {t("downloadIpynb")}
-                      </Button>
-                    )}
-                  </div>
-
-                  {wantHtml && (
-                    <>
-                      <Separator className="my-5" />
-                      <iframe
-                        title={t("previewFrameTitle")}
-                        src={blobUrl}
-                        className="h-[70vh] w-full rounded-xl border bg-white shadow-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:h-[calc(100vh-24rem)] dark:ring-1 dark:ring-white/10"
+              <div className="mt-5 flex flex-wrap items-center gap-2">
+                {result && (
+                  <Button
+                    variant="outline"
+                    className="size-10 p-0"
+                    title={t("downloadHtml")}
+                    aria-label={t("downloadHtml")}
+                    nativeButton={false}
+                    render={
+                      <a
+                        href={blobUrl ?? undefined}
+                        download={result.fileName}
+                        onClick={() => toast.success(t("toastDownloadingHtml"))}
                       />
-                    </>
-                  )}
+                    }
+                  >
+                    <Download className="size-4" />
+                  </Button>
+                )}
+                {result && wantPdf && (
+                  <Button
+                    variant="outline"
+                    className="size-10 p-0"
+                    title={t("downloadPdf")}
+                    aria-label={t("downloadPdf")}
+                    onClick={handlePrint}
+                  >
+                    <Printer className="size-4" />
+                  </Button>
+                )}
+                {result && (
+                  <Button
+                    variant="ghost"
+                    className="size-10 p-0 text-muted-foreground"
+                    title={t("openInTab")}
+                    aria-label={t("openInTab")}
+                    nativeButton={false}
+                    render={
+                      <a
+                        href={blobUrl ?? undefined}
+                        target="_blank"
+                        rel="noreferrer"
+                      />
+                    }
+                  >
+                    <ExternalLink className="size-4" />
+                  </Button>
+                )}
+                {notebook && (
+                  <Button
+                    variant="outline"
+                    className="size-10 p-0"
+                    title={t("downloadIpynb")}
+                    aria-label={t("downloadIpynb")}
+                    onClick={downloadNotebook}
+                  >
+                    <Notebook className="size-4" />
+                  </Button>
+                )}
+                {(result || notebook) && (
+                  <Button
+                    className="size-10 p-0"
+                    title={t("downloadAllZip")}
+                    aria-label={t("downloadAllZip")}
+                    onClick={downloadAllZip}
+                  >
+                    <Archive className="size-4" />
+                  </Button>
+                )}
+              </div>
+
+              {result && blobUrl && wantHtml && (
+                <>
+                  <Separator className="my-5" />
+                  <iframe
+                    title={t("previewFrameTitle")}
+                    src={blobUrl}
+                    className="h-[70vh] w-full rounded-xl border bg-white shadow-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:h-[calc(100vh-24rem)] dark:ring-1 dark:ring-white/10"
+                  />
                 </>
               )}
 
