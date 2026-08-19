@@ -1,6 +1,6 @@
 "use client";
 
-import { Cpu, Languages, ShieldCheck, type LucideIcon } from "lucide-react";
+import { Bug, Cpu, Languages, ShieldCheck, type LucideIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -148,6 +148,15 @@ export default function Home() {
               sebastianrgv.com
             </a>
           </p>
+          <a
+            href="https://github.com/sebastian-rgv/quartopress/issues"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 font-medium text-muted-foreground transition-colors hover:border-accent/50 hover:text-foreground"
+          >
+            <Bug className="size-3.5" />
+            {t("footerReportIssue")}
+          </a>
         </div>
       </footer>
     </div>

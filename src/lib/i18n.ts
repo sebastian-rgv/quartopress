@@ -16,6 +16,7 @@ const en = {
   footerPandocIntro: "Local conversion in your browser with",
   footerNeverLeaves: "Your document never leaves your device.",
   footerCreatedBy: "Created by",
+  footerReportIssue: "Report an issue",
 
   themeToggle: "Toggle theme",
   languageToggle: "Change language",
@@ -84,6 +85,7 @@ const es = {
   footerPandocIntro: "Conversión local en tu navegador con",
   footerNeverLeaves: "Tu documento nunca sale de tu dispositivo.",
   footerCreatedBy: "Creado por",
+  footerReportIssue: "Reportar un problema",
 
   themeToggle: "Cambiar tema",
   languageToggle: "Cambiar idioma",
