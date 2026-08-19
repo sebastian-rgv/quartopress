@@ -69,7 +69,16 @@ async function loadPandoc(
 }
 
 function prepareQuartoCopy(source: string): string {
-  let s = source.replace(/^```\{[^}]*\}\n/gm, "```\n");
+  // Normaliza line endings Windows (CRLF) y CR sueltos: los .qmd vienen
+  // con \r\n y los regex de limpieza de chunks solo matchean \n.
+  let s = source.replace(/\r\n?/g, "\n");
+  // Convierte ```{r,echo=TRUE} o ```{.r} a ```r conservando el lenguaje,
+  // para que pandoc genere <pre class="sourceCode r"> y se pueda estilar.
+  s = s.replace(/^```\{([^}]*)\}\n/gm, (_match, opts: string) => {
+    const lang = opts.replace(/^\.?/, "").split(/[,;\s]+/)[0].trim();
+    return lang ? "```" + lang + "\n" : "```\n";
+  });
+  s = wrapMathEnvironments(s);
   s = s.replace("theme: [default, custom.css]", "theme: default");
   s = s.replace("chalkboard: true", "chalkboard: false");
   return s;
@@ -77,15 +86,79 @@ function prepareQuartoCopy(source: string): string {
 
 function addPrintStyles(html: string): string {
   const css = `<style>
+pre {
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+  line-height: 1.5;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.9em;
+  margin: 1em 0;
+}
+pre code {
+  background: transparent;
+  padding: 0;
+  white-space: pre;
+}
+@media (prefers-color-scheme: dark) {
+  pre {
+    background: #1e1e1e;
+    border-color: #3d3d3d;
+    color: #e0e0e0;
+  }
+}
 @media print {
   @page { size: A4; margin: 2cm; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  pre {
+    background: #f6f8fa !important;
+    border: 1px solid #999 !important;
+    color: #000 !important;
+    page-break-inside: avoid;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  pre code { white-space: pre-wrap; }
 }
 </style>`;
   if (/<\/head>/i.test(html)) {
     return html.replace(/<\/head>/i, `${css}\n</head>`);
   }
   return css + "\n" + html;
+}
+
+/**
+ * Envuelve bloques \begin{align*}/\end{align*} (y variantes align, equation,
+ * gather) que estén sueltos entre $$...$$ para que pandoc los convierta a
+ * MathML. Sin los delimitadores, pandoc los deja como texto plano.
+ */
+function wrapMathEnvironments(s: string): string {
+  const BEGIN = /\\begin\{(align|align\*|equation|equation\*|gather|gather\*)\}/;
+  const END = /\\end\{(align|align\*|equation|equation\*|gather|gather\*)\}/;
+  const lines = s.split("\n");
+  const out: string[] = [];
+  let inMath = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!inMath && BEGIN.test(line)) {
+      const prev = out.length ? out[out.length - 1].trimEnd() : "";
+      if (!prev.endsWith("$$")) out.push("$$");
+      out.push(line);
+      inMath = true;
+      continue;
+    }
+    if (inMath && END.test(line)) {
+      out.push(line);
+      const next = lines[i + 1]?.trimStart() ?? "";
+      if (!next.startsWith("$$")) out.push("$$");
+      inMath = false;
+      continue;
+    }
+    out.push(line);
+  }
+  return out.join("\n");
 }
 
 interface KernelSpec {
