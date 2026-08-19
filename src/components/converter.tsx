@@ -7,6 +7,7 @@ import {
   Download,
   ExternalLink,
   FileCode,
+  FileDown,
   FileText,
   Loader2,
   Notebook,
@@ -36,6 +37,7 @@ import {
   type ProgressInfo,
 } from "@/lib/converter";
 import { buildZip } from "@/lib/zip";
+import { htmlToPdfBlob } from "@/lib/pdf";
 
 type Status = "idle" | "working" | "done" | "error";
 
@@ -267,6 +269,28 @@ export function Converter() {
     setTimeout(() => URL.revokeObjectURL(url), 10_000);
     toast.success(t("toastDownloadingZip"));
   }, [result, notebook, t]);
+
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+
+  const downloadPdfFile = useCallback(async () => {
+    if (!result) return;
+    setGeneratingPdf(true);
+    try {
+      toast.success(t("toastGeneratingPdf"));
+      const blob = await htmlToPdfBlob(result.html);
+      const url = URL.createObjectURL(blob);
+      const baseName = result.fileName.replace(/\.html$/i, "");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${baseName}.pdf`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("unexpectedError"));
+    } finally {
+      setGeneratingPdf(false);
+    }
+  }, [result, t]);
 
   const busy = status === "working";
   const downloadPct =
@@ -576,6 +600,22 @@ export function Converter() {
                     }
                   >
                     <Download className="size-4" />
+                  </Button>
+                )}
+                {result && wantPdf && (
+                  <Button
+                    variant="outline"
+                    className="size-10 p-0"
+                    title={t("downloadPdfFile")}
+                    aria-label={t("downloadPdfFile")}
+                    onClick={downloadPdfFile}
+                    disabled={generatingPdf}
+                  >
+                    {generatingPdf ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <FileDown className="size-4" />
+                    )}
                   </Button>
                 )}
                 {result && wantPdf && (
