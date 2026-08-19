@@ -79,6 +79,8 @@ function prepareQuartoCopy(source: string): string {
     return lang ? "```" + lang + "\n" : "```\n";
   });
   s = wrapMathEnvironments(s);
+  // texmath (pandoc) no soporta \hspace; lo convertimos a \qquad.
+  s = s.replace(/\\hspace\*?\{[^}]*\}/g, "\\qquad");
   s = s.replace("theme: [default, custom.css]", "theme: default");
   s = s.replace("chalkboard: true", "chalkboard: false");
   return s;
