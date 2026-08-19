@@ -64,10 +64,6 @@ const en = {
   openInTab: "Open in tab",
   previewFrameTitle: "Preview of the converted document",
 
-  notebookGenerated: "Jupyter notebook generated",
-  kernelDetected: "Detected kernel: {kernel}",
-  noKernel: "No kernel detected (pick it when opening)",
-
   previewEmptyTitle: "No result yet",
   previewEmptyBody:
     "Convert your document to see the preview here on the right.",
@@ -135,10 +131,6 @@ const es = {
   downloadIpynb: "Descargar .ipynb",
   openInTab: "En pestaña",
   previewFrameTitle: "Vista previa del documento convertido",
-
-  notebookGenerated: "Notebook Jupyter generado",
-  kernelDetected: "Kernel detectado: {kernel}",
-  noKernel: "Sin kernel detectado (elígelo al abrir)",
 
   previewEmptyTitle: "Aún no hay resultado",
   previewEmptyBody:

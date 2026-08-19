@@ -615,34 +615,6 @@ export function Converter() {
                   />
                 </>
               )}
-
-              {notebook && (
-                <div className="mt-5">
-                  <div className="flex items-center justify-between gap-3 rounded-[12px] border bg-muted/50 px-4 py-3 text-sm">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <Notebook className="size-4 shrink-0 text-muted-foreground" />
-                      <div className="min-w-0">
-                        <p className="truncate font-medium">
-                          {t("notebookGenerated")}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {notebook.kernel
-                            ? t("kernelDetected", { kernel: notebook.kernel })
-                            : t("noKernel")}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      className="gap-2"
-                      onClick={downloadNotebook}
-                    >
-                      <Download className="size-4" />
-                      {t("downloadIpynb")}
-                    </Button>
-                  </div>
-                </div>
-              )}
             </>
           ) : busy ? (
             <div className="space-y-3">
