@@ -56,6 +56,7 @@ const en = {
   toastDownloadingHtml: "Downloading HTML…",
   toastDownloadingZip: "Downloading ZIP…",
   toastGeneratingPdf: "Generating PDF…",
+  toastPdfFailed: "Could not generate the PDF.",
 
   previewTitle: "Preview",
   newConversion: "New conversion",
@@ -132,6 +133,7 @@ const es = {
   toastDownloadingHtml: "Descargando HTML…",
   toastDownloadingZip: "Descargando ZIP…",
   toastGeneratingPdf: "Generando PDF…",
+  toastPdfFailed: "No se pudo generar el PDF.",
 
   previewTitle: "Vista previa",
   newConversion: "Nueva conversión",

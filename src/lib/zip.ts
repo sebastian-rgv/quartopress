@@ -5,7 +5,7 @@
 
 interface ZipEntry {
   name: string;
-  content: string;
+  content: string | Uint8Array;
 }
 
 const CRC_TABLE = (() => {
@@ -80,7 +80,10 @@ export function buildZip(entries: ZipEntry[]): Blob {
 
   for (const entry of entries) {
     const nameBytes = utf8Encode(entry.name);
-    const dataBytes = utf8Encode(entry.content);
+    const dataBytes =
+      typeof entry.content === "string"
+        ? utf8Encode(entry.content)
+        : entry.content;
     const crc = crc32(dataBytes);
 
     // Local file header

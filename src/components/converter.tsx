@@ -253,22 +253,40 @@ export function Converter() {
     toast.success(t("toastDownloadingNotebook"));
   }, [notebook, t]);
 
-  const downloadAllZip = useCallback(() => {
+  const [zipping, setZipping] = useState(false);
+
+  const downloadAllZip = useCallback(async () => {
     if (!result && !notebook) return;
-    const files: { name: string; content: string }[] = [];
-    if (result) files.push({ name: result.fileName, content: result.html });
-    if (notebook) files.push({ name: notebook.fileName, content: notebook.json });
-    const zip = buildZip(files);
-    const url = URL.createObjectURL(zip);
-    const baseName = (result?.fileName ?? notebook?.fileName ?? "documento")
-      .replace(/\.(html|ipynb)$/i, "");
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${baseName}.zip`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 10_000);
-    toast.success(t("toastDownloadingZip"));
-  }, [result, notebook, t]);
+    setZipping(true);
+    try {
+      const files: { name: string; content: string | Uint8Array }[] = [];
+      if (result) files.push({ name: result.fileName, content: result.html });
+      if (notebook) files.push({ name: notebook.fileName, content: notebook.json });
+      if (result && wantPdf) {
+        try {
+          const pdfBlob = await htmlToPdfBlob(result.html);
+          files.push({
+            name: result.fileName.replace(/\.html$/i, ".pdf"),
+            content: new Uint8Array(await pdfBlob.arrayBuffer()),
+          });
+        } catch {
+          toast.error(t("toastPdfFailed"));
+        }
+      }
+      const zip = buildZip(files);
+      const url = URL.createObjectURL(zip);
+      const baseName = (result?.fileName ?? notebook?.fileName ?? "documento")
+        .replace(/\.(html|ipynb)$/i, "");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${baseName}.zip`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      toast.success(t("toastDownloadingZip"));
+    } finally {
+      setZipping(false);
+    }
+  }, [result, notebook, wantPdf, t]);
 
   const [generatingPdf, setGeneratingPdf] = useState(false);
 
@@ -664,8 +682,13 @@ export function Converter() {
                     title={t("downloadAllZip")}
                     aria-label={t("downloadAllZip")}
                     onClick={downloadAllZip}
+                    disabled={zipping}
                   >
-                    <Archive className="size-4" />
+                    {zipping ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Archive className="size-4" />
+                    )}
                   </Button>
                 )}
               </div>
