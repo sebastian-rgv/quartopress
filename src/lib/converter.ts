@@ -89,8 +89,8 @@ function prepareQuartoCopy(source: string): string {
 function addPrintStyles(html: string): string {
   const css = `<style>
 pre {
-  background: #f6f8fa;
-  border: 1px solid #d0d7de;
+  background: #eef1f4;
+  border: 1px solid #b6c2cf;
   border-radius: 8px;
   padding: 1rem;
   overflow-x: auto;
@@ -98,41 +98,50 @@ pre {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   font-size: 0.9em;
   margin: 1em 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  color: #1f2328 !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: anywhere !important;
 }
 pre code {
   background: transparent;
   padding: 0;
-  white-space: pre;
+  color: inherit !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: anywhere !important;
 }
 /* Sintaxis: colores fuertes (clases de pandoc/pygments) */
-.sourceCode .kw { color: #a626a4; font-weight: 600; }
-.sourceCode .fu { color: #0550ae; }
-.sourceCode .st { color: #116329; }
-.sourceCode .dv, .sourceCode .fl { color: #b35900; }
-.sourceCode .co, .sourceCode .ch, .sourceCode .c1 { color: #6e7781; font-style: italic; }
-.sourceCode .cn { color: #953800; }
-.sourceCode .ot { color: #8250df; }
-.sourceCode .at { color: #953800; }
-.sourceCode .sc { color: #0550ae; }
-.sourceCode .dt { color: #116329; }
-.sourceCode .er { color: #cf222e; font-weight: 600; }
+.sourceCode .kw { color: #9d1bc4 !important; font-weight: 700; }
+.sourceCode .fu { color: #0446b8 !important; }
+.sourceCode .st { color: #0a6b28 !important; }
+.sourceCode .dv, .sourceCode .fl { color: #9a4a00 !important; }
+.sourceCode .co, .sourceCode .ch, .sourceCode .c1 { color: #57606a !important; font-style: italic; }
+.sourceCode .cn { color: #8a3a00 !important; }
+.sourceCode .ot { color: #6e2bd6 !important; }
+.sourceCode .at { color: #8a3a00 !important; }
+.sourceCode .sc { color: #0446b8 !important; }
+.sourceCode .dt { color: #0a6b28 !important; }
+.sourceCode .er { color: #b0080e !important; font-weight: 700; }
 @media (prefers-color-scheme: dark) {
   pre {
     background: #161b22;
     border-color: #30363d;
-    color: #e6edf3;
+    color: #f0f6fc !important;
   }
-  .sourceCode .kw { color: #ff7b72; }
-  .sourceCode .fu { color: #79c0ff; }
-  .sourceCode .st { color: #a5d6ff; }
-  .sourceCode .dv, .sourceCode .fl { color: #f2cc60; }
-  .sourceCode .co, .sourceCode .ch, .sourceCode .c1 { color: #8b949e; }
-  .sourceCode .cn { color: #ffa657; }
-  .sourceCode .ot { color: #d2a8ff; }
-  .sourceCode .at { color: #ffa657; }
-  .sourceCode .sc { color: #79c0ff; }
-  .sourceCode .dt { color: #a5d6ff; }
-  .sourceCode .er { color: #ff7b72; }
+  .sourceCode .kw { color: #ff85c1 !important; }
+  .sourceCode .fu { color: #85c1ff !important; }
+  .sourceCode .st { color: #7ee787 !important; }
+  .sourceCode .dv, .sourceCode .fl { color: #ffc46b !important; }
+  .sourceCode .co, .sourceCode .ch, .sourceCode .c1 { color: #9da7b3 !important; }
+  .sourceCode .cn { color: #ffb3a0 !important; }
+  .sourceCode .ot { color: #d2a8ff !important; }
+  .sourceCode .at { color: #ffb3a0 !important; }
+  .sourceCode .sc { color: #85c1ff !important; }
+  .sourceCode .dt { color: #7ee787 !important; }
+  .sourceCode .er { color: #ff7b72 !important; }
 }
 @media print {
   @page { size: A4; margin: 2cm; }
