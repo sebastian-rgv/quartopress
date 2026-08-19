@@ -206,11 +206,21 @@ export function Converter() {
     iframe.onload = () => {
       const win = iframe.contentWindow;
       if (win) {
-        // El PDF impreso toma el <title> del documento: lo igualamos al
-        // nombre del archivo fuente para que no salga como "QuartoPress.pdf".
-        win.document.title = result.fileName.replace(/\.html$/i, "");
+        const pdfName = result.fileName.replace(/\.html$/i, "");
+        // El iframe usa su propio <title> para el documento.
+        win.document.title = pdfName;
+        // Chrome nombra el PDF con el <title> de la página PADRE (QuartoPress), no
+        // el del iframe. Lo cambiamos temporalmente y lo restauramos al cerrar el
+        // diálogo de impresión para que el archivo salga con el nombre del fuente.
+        const prevTitle = document.title;
+        document.title = pdfName;
         win.focus();
         win.print();
+        const restore = () => {
+          document.title = prevTitle;
+        };
+        window.addEventListener("afterprint", restore, { once: true });
+        setTimeout(restore, 120_000);
       }
       setTimeout(() => iframe.remove(), 120_000);
     };
