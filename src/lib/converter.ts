@@ -89,8 +89,8 @@ function prepareQuartoCopy(source: string): string {
 function addPrintStyles(html: string): string {
   const css = `<style>
 pre {
-  background: #eef1f4;
-  border: 1px solid #b6c2cf;
+  background: #f6f8fa !important;
+  border: 1px solid #b6c2cf !important;
   border-radius: 8px;
   padding: 1rem;
   overflow-x: auto;
@@ -113,7 +113,7 @@ pre code {
   word-wrap: break-word !important;
   overflow-wrap: anywhere !important;
 }
-/* Sintaxis: colores fuertes (clases de pandoc/pygments) */
+/* Sintaxis: colores fuertes (clases de pandoc/pygments) — fijos, sin modo oscuro */
 .sourceCode .kw { color: #9d1bc4 !important; font-weight: 700; }
 .sourceCode .fu { color: #0446b8 !important; }
 .sourceCode .st { color: #0a6b28 !important; }
@@ -125,24 +125,6 @@ pre code {
 .sourceCode .sc { color: #0446b8 !important; }
 .sourceCode .dt { color: #0a6b28 !important; }
 .sourceCode .er { color: #b0080e !important; font-weight: 700; }
-@media (prefers-color-scheme: dark) {
-  pre {
-    background: #161b22;
-    border-color: #30363d;
-    color: #f0f6fc !important;
-  }
-  .sourceCode .kw { color: #ff85c1 !important; }
-  .sourceCode .fu { color: #85c1ff !important; }
-  .sourceCode .st { color: #7ee787 !important; }
-  .sourceCode .dv, .sourceCode .fl { color: #ffc46b !important; }
-  .sourceCode .co, .sourceCode .ch, .sourceCode .c1 { color: #9da7b3 !important; }
-  .sourceCode .cn { color: #ffb3a0 !important; }
-  .sourceCode .ot { color: #d2a8ff !important; }
-  .sourceCode .at { color: #ffb3a0 !important; }
-  .sourceCode .sc { color: #85c1ff !important; }
-  .sourceCode .dt { color: #7ee787 !important; }
-  .sourceCode .er { color: #ff7b72 !important; }
-}
 @media print {
   @page { size: A4; margin: 2cm; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
