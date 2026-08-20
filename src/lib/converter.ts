@@ -204,7 +204,7 @@ function detectLanguage(source: string): string | null {
 
 function fencesToCodeCells(source: string): string {
   return source.replace(
-    /^```([^\n]*)\n([\s\S]*?)^```\s*$/gm,
+    /^```([^\r\n]*)[ \t]*\r?\n([\s\S]*?)^```[ \t]*\r?$/gm,
     (_match, info: string, body: string) => {
       const lang = info
         .replace(/^\{/, "")
@@ -275,10 +275,15 @@ export async function convertNotebook(
   const pandoc = await loadPandoc(onProgress);
   report(onProgress, { loaded: 0, total: 0, phase: "convert" });
 
-  const lang = detectLanguage(input.source);
+  // Normaliza CRLF (rompía la limpieza de chunks y el front matter) y
+  // envuelve fórmulas align* sueltas en $$...$$ para que se vean como
+  // LaTeX renderizable en las celdas markdown del notebook.
+  const normalized = input.source.replace(/\r\n?/g, "\n");
+  const lang = detectLanguage(normalized);
   const kernel = lang ? (KERNELS[lang] ?? null) : null;
 
-  let prepared = fencesToCodeCells(input.source);
+  let prepared = wrapMathEnvironments(normalized);
+  prepared = fencesToCodeCells(prepared);
   if (kernel) prepared = injectKernelspec(prepared, kernel);
 
   const result = await pandoc.convert(
