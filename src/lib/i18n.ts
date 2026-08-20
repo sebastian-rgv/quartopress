@@ -68,6 +68,17 @@ const en = {
   previewEmptyTitle: "No result yet",
   previewEmptyBody:
     "Convert your document to see the preview here on the right.",
+
+  faqTitle: "Online QMD & Markdown converter — FAQ",
+  faqWhatQ: "What is QuartoPress?",
+  faqWhatA:
+    "QuartoPress is a free online converter for Quarto (.qmd) and Markdown (.md) documents. It turns your files into HTML, PDF and Jupyter notebooks (.ipynb) right in your browser, powered by Pandoc compiled to WebAssembly.",
+  faqPrivateQ: "Do you upload my files to a server?",
+  faqPrivateA:
+    "Never. Everything runs locally in your browser with Pandoc WASM, so your documents never leave your device. No accounts, no cloud uploads.",
+  faqFormatsQ: "Which conversions are supported?",
+  faqFormatsA:
+    "You can convert .qmd and .md files to standalone HTML, PDF (print → save as PDF) and Jupyter notebooks with R, Python or Julia kernels. LaTeX math becomes MathML and Quarto chunks are handled automatically.",
 } satisfies Record<string, string>;
 
 const es = {
@@ -137,6 +148,17 @@ const es = {
   previewEmptyTitle: "Aún no hay resultado",
   previewEmptyBody:
     "Convierte tu documento para ver la vista previa aquí, a la derecha.",
+
+  faqTitle: "Conversor online de QMD y MD — preguntas frecuentes",
+  faqWhatQ: "¿Qué es QuartoPress?",
+  faqWhatA:
+    "QuartoPress es un conversor online gratuito de documentos Quarto (.qmd) y Markdown (.md). Convierte tus archivos a HTML, PDF y notebooks Jupyter (.ipynb) directamente en tu navegador, con Pandoc compilado a WebAssembly.",
+  faqPrivateQ: "¿Suben mis archivos a un servidor?",
+  faqPrivateA:
+    "Nunca. Todo corre localmente en tu navegador con Pandoc WASM: tus documentos nunca salen de tu dispositivo. Sin cuentas ni subidas a la nube.",
+  faqFormatsQ: "¿Qué conversiones se pueden hacer?",
+  faqFormatsA:
+    "Puedes convertir archivos .qmd y .md a HTML autónomo, PDF (imprimir → guardar como PDF) y notebooks Jupyter con kernels de R, Python o Julia. Las fórmulas LaTeX pasan a MathML y los chunks de Quarto se procesan automáticamente.",
 } satisfies Record<string, string>;
 
 export const dictionaries = { en, es } as const;

@@ -10,12 +10,18 @@ import { Converter } from "@/components/converter";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import type { I18nKey } from "@/lib/i18n";
+import { dictionaries, type I18nKey } from "@/lib/i18n";
 
 const FEATURES: { icon: LucideIcon; labelKey: I18nKey }[] = [
   { icon: ShieldCheck, labelKey: "featureLocal" },
   { icon: Cpu, labelKey: "featurePandoc" },
   { icon: Languages, labelKey: "featureRuntimes" },
+];
+
+const FAQ: { q: I18nKey; a: I18nKey }[] = [
+  { q: "faqWhatQ", a: "faqWhatA" },
+  { q: "faqPrivateQ", a: "faqPrivateA" },
+  { q: "faqFormatsQ", a: "faqFormatsA" },
 ];
 
 export default function Home() {
@@ -121,6 +127,38 @@ export default function Home() {
         </section>
 
         <Converter />
+
+        <section
+          aria-label={t("faqTitle")}
+          className="relative mx-auto mt-16 w-full max-w-4xl sm:px-2"
+        >
+          <Separator className="mx-auto mb-8 max-w-2xl" />
+          <h2 className="text-center font-display text-2xl font-bold tracking-tight text-balance sm:text-3xl">
+            {t("faqTitle")}
+          </h2>
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {FAQ.map(({ q, a }) => (
+              <article
+                key={q}
+                className="rounded-xl border border-border bg-card p-5 text-left"
+              >
+                <h3 className="font-display text-lg font-bold">{t(q)}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                  {t(a)}
+                </p>
+              </article>
+            ))}
+          </div>
+          {/* Versión en español para SEO (visible solo en lectores/robots) */}
+          <div className="sr-only" lang="es">
+            {FAQ.map(({ q, a }) => (
+              <div key={q}>
+                <h3>{dictionaries.es[q]}</h3>
+                <p>{dictionaries.es[a]}</p>
+              </div>
+            ))}
+          </div>
+        </section>
       </main>
 
       <footer className="relative mt-16 pb-8">
