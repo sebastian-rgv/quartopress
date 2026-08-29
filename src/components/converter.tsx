@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CheckCircle2,
+  ClipboardPaste,
   ClipboardPen,
   Download,
   ExternalLink,
@@ -165,9 +166,11 @@ export function Converter() {
   const [inputMode, setInputMode] = useState<"upload" | "paste">("upload");
   const [pastedText, setPastedText] = useState("");
   const [outputName, setOutputName] = useState("document");
+  const [draggingPaste, setDraggingPaste] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const dragDepth = useRef(0);
+  const pasteDragDepth = useRef(0);
 
   const docs = useMemo(() => files.filter((f) => DOC_RE.test(f.name)), [files]);
 
@@ -217,6 +220,50 @@ export function Converter() {
     },
     [addFiles]
   );
+
+  const handlePasteDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    pasteDragDepth.current += 1;
+    setDraggingPaste(true);
+  }, []);
+
+  const handlePasteDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+  }, []);
+
+  const handlePasteDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    pasteDragDepth.current -= 1;
+    if (pasteDragDepth.current <= 0) setDraggingPaste(false);
+  }, []);
+
+  const handlePasteDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      pasteDragDepth.current = 0;
+      setDraggingPaste(false);
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      if (!DOC_RE.test(file.name)) {
+        toast.error(t("toastInvalidDrop"));
+        return;
+      }
+      file.text().then((content) => {
+        setPastedText(content);
+        toast.success(t("toastFileLoaded", { name: file.name }));
+      });
+    },
+    [t]
+  );
+
+  const handlePasteFromClipboard = useCallback(async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      setPastedText(text);
+    } catch {
+      toast.error(t("toastClipboardError"));
+    }
+  }, [t]);
 
   const convert = useCallback(async () => {
     const isPaste = inputMode === "paste";
@@ -477,6 +524,15 @@ export function Converter() {
                     <Sparkles className="size-3.5" />
                     {t("pasteLoadSample")}
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={handlePasteFromClipboard}
+                  >
+                    <ClipboardPaste className="size-3.5" />
+                    {t("pasteFromClipboard")}
+                  </Button>
                   {pastedText.length > 0 && (
                     <Button
                       variant="ghost"
@@ -500,26 +556,41 @@ export function Converter() {
                   })}
                 </span>
               </div>
-              <textarea
-                aria-label={t("pasteAria")}
-                placeholder={t("pastePlaceholder")}
-                spellCheck={false}
-                value={pastedText}
-                onChange={(e) => setPastedText(e.target.value)}
-                onKeyDown={(e) => {
-                  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-                    e.preventDefault();
-                    if (canConvert && !busy) convert();
-                  }
-                }}
-                className={cn(
-                  "min-h-[280px] w-full resize-y rounded-xl border border-dashed bg-transparent px-4 py-3 font-mono text-sm leading-relaxed",
-                  "border-zinc-300 placeholder:text-muted-foreground/60",
-                  "focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/30",
-                  "dark:border-zinc-700 dark:focus:border-accent/50",
-                  "hover:border-accent/40 transition-colors duration-200"
+              <div
+                className="relative"
+                onDragEnter={handlePasteDragEnter}
+                onDragOver={handlePasteDragOver}
+                onDragLeave={handlePasteDragLeave}
+                onDrop={handlePasteDrop}
+              >
+                {draggingPaste && (
+                  <div className="absolute inset-0 z-10 grid place-items-center rounded-xl border-accent bg-accent/5 ring-2 ring-accent/40 pointer-events-none">
+                    <p className="text-sm font-semibold text-accent">
+                      {t("pasteDropOverlay")}
+                    </p>
+                  </div>
                 )}
-              />
+                <textarea
+                  aria-label={t("pasteAria")}
+                  placeholder={t("pastePlaceholder")}
+                  spellCheck={false}
+                  value={pastedText}
+                  onChange={(e) => setPastedText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                      e.preventDefault();
+                      if (canConvert && !busy) convert();
+                    }
+                  }}
+                  className={cn(
+                    "min-h-[280px] w-full resize-y rounded-xl border border-dashed bg-transparent px-4 py-3 font-mono text-sm leading-relaxed",
+                    "border-zinc-300 placeholder:text-muted-foreground/60",
+                    "focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/30",
+                    "dark:border-zinc-700 dark:focus:border-accent/50",
+                    "hover:border-accent/40 transition-colors duration-200"
+                  )}
+                />
+              </div>
               <p className="text-xs text-muted-foreground">
                 {t("pasteHint")}
               </p>
