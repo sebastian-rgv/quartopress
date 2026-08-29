@@ -50,6 +50,9 @@ const en = {
   convertButton: "Convert",
   convertingButton: "Converting…",
   singleFileRequired: "Select exactly one .qmd or .md file.",
+  pasteRequired: "Write or paste some Markdown to convert.",
+  outputNameLabel: "Output file name",
+  outputNamePlaceholder: "document",
 
   downloadEngine: "Downloading Pandoc engine…",
   downloadOnceNote: "It downloads once and stays cached.",
@@ -138,6 +141,9 @@ const es = {
   convertButton: "Convertir",
   convertingButton: "Convirtiendo…",
   singleFileRequired: "Selecciona exactamente un archivo .qmd o .md.",
+  pasteRequired: "Escribe o pega algo de Markdown para convertir.",
+  outputNameLabel: "Nombre del archivo de salida",
+  outputNamePlaceholder: "documento",
 
   downloadEngine: "Descargando motor pandoc…",
   downloadOnceNote: "Se descarga una sola vez y queda en caché.",

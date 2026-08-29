@@ -53,6 +53,14 @@ interface NotebookResult {
 
 const DOC_RE = /\.(qmd|md)$/i;
 
+function sanitizeOutputName(raw: string): string {
+  return raw
+    .replace(/\.(qmd|md|html)$/i, "")
+    .replace(/[^a-zA-Z0-9_\-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "") || "document";
+}
+
 const FORMATS = [
   {
     id: "html",
@@ -91,6 +99,7 @@ export function Converter() {
   const [dragging, setDragging] = useState(false);
   const [inputMode, setInputMode] = useState<"upload" | "paste">("upload");
   const [pastedText, setPastedText] = useState("");
+  const [outputName, setOutputName] = useState("document");
 
   const inputRef = useRef<HTMLInputElement>(null);
   const dragDepth = useRef(0);
@@ -145,7 +154,9 @@ export function Converter() {
   );
 
   const convert = useCallback(async () => {
-    if (docs.length !== 1) return;
+    const isPaste = inputMode === "paste";
+    if (isPaste && pastedText.trim().length === 0) return;
+    if (!isPaste && docs.length !== 1) return;
     setStatus("working");
     setError(null);
     setProgress(null);
@@ -153,15 +164,18 @@ export function Converter() {
     setNotebook(null);
 
     try {
-      const source = await docs[0].text();
-      const baseName = docs[0].name.replace(DOC_RE, "");
+      const source = isPaste ? pastedText : await docs[0].text();
+      const baseName = isPaste
+        ? sanitizeOutputName(outputName)
+        : docs[0].name.replace(DOC_RE, "");
+      const sourceName = isPaste ? `${sanitizeOutputName(outputName)}.md` : docs[0].name;
 
       if (wantIpynb) {
         const nb = await convertNotebook({ source }, (p) => setProgress(p));
         setNotebook({
           json: nb.json,
           fileName: `${baseName}.ipynb`,
-          sourceName: docs[0].name,
+          sourceName,
           kernel: nb.kernel,
         });
       }
@@ -179,7 +193,7 @@ export function Converter() {
         setResult({
           html: out.html,
           fileName,
-          sourceName: docs[0].name,
+          sourceName,
         });
       }
 
@@ -194,7 +208,7 @@ export function Converter() {
       setStatus("error");
       toast.error(t("toastConvertFailed"), { description: message });
     }
-  }, [docs, blobUrl, wantHtml, wantPdf, wantIpynb, t]);
+  }, [inputMode, pastedText, outputName, docs, blobUrl, wantHtml, wantPdf, wantIpynb, t]);
 
   const handlePrint = useCallback(() => {
     if (!blobUrl || !result) return;
@@ -257,7 +271,11 @@ export function Converter() {
     progress && progress.phase === "download" && progress.total > 0
       ? Math.round((progress.loaded / progress.total) * 100)
       : null;
-  const canConvert = docs.length === 1 && (wantHtml || wantPdf || wantIpynb);
+  const hasFormat = wantHtml || wantPdf || wantIpynb;
+  const canConvert =
+    inputMode === "paste"
+      ? pastedText.trim().length > 0 && hasFormat
+      : docs.length === 1 && hasFormat;
 
   return (
     <div
@@ -397,6 +415,22 @@ export function Converter() {
               <p className="text-xs text-muted-foreground">
                 {t("pasteHint")}
               </p>
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="output-name"
+                  className="text-xs font-medium text-muted-foreground"
+                >
+                  {t("outputNameLabel")}
+                </label>
+                <input
+                  id="output-name"
+                  type="text"
+                  value={outputName}
+                  onChange={(e) => setOutputName(e.target.value)}
+                  placeholder={t("outputNamePlaceholder")}
+                  className="h-8 flex-1 rounded-lg border border-zinc-300 bg-transparent px-3 text-sm font-mono dark:border-zinc-700"
+                />
+              </div>
             </div>
           )}
 
@@ -509,7 +543,12 @@ export function Converter() {
             )}
           </Button>
 
-          {docs.length !== 1 && files.length > 0 && (
+          {inputMode === "paste" && pastedText.trim().length === 0 && (
+            <p className="mt-2 text-center text-xs text-destructive">
+              {t("pasteRequired")}
+            </p>
+          )}
+          {inputMode === "upload" && docs.length !== 1 && files.length > 0 && (
             <p className="mt-2 text-center text-xs text-destructive">
               {t("singleFileRequired")}
             </p>
