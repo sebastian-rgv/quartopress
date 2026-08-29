@@ -90,6 +90,10 @@ const en = {
   toastInvalidDrop: "Only .qmd or .md files",
   toastClipboardError: "Could not read the clipboard",
 
+  pasteQuickMinimal: "Minimal",
+  pasteQuickMath: "With math",
+  pasteQuickQuarto: "Quarto doc",
+
   faqTitle: "Online QMD & Markdown converter — FAQ",
   faqWhatQ: "What is QuartoPress?",
   faqWhatA:
@@ -190,6 +194,10 @@ const es = {
   toastFileLoaded: "{name} cargado en el editor",
   toastInvalidDrop: "Solo archivos .qmd o .md",
   toastClipboardError: "No se pudo leer el portapapeles",
+
+  pasteQuickMinimal: "Mínimo",
+  pasteQuickMath: "Con fórmulas",
+  pasteQuickQuarto: "Documento Quarto",
 
   faqTitle: "Conversor online de QMD y MD — preguntas frecuentes",
   faqWhatQ: "¿Qué es QuartoPress?",

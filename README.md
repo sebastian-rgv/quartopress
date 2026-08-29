@@ -15,6 +15,7 @@ QuartoPress runs [Pandoc](https://pandoc.org) compiled to WebAssembly (`pandoc-w
 - **PDF** export through the browser's print dialog (save as PDF) with A4 margins.
 - **Jupyter notebooks (.ipynb)**: code chunks become cells, and the kernel (**R**, **Python**, or **Julia**) is detected automatically from the first chunk — or respected from your `jupyter:` YAML.
 - **Built-in preview** with light and dark mode.
+- **Paste markdown**: write or paste your `.qmd` / `.md` content directly in the editor (with a sample, quick presets, drag & drop and clipboard support) — no file needed.
 
 ## Language
 

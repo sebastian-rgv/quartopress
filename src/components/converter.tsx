@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Calculator,
   CheckCircle2,
   ClipboardPaste,
   ClipboardPen,
@@ -148,6 +149,26 @@ where $E$ is energy, $m$ is mass, and $c$ is the speed of light.
 ## References
 
 For more information, see the [NASA Climate website](https://climate.nasa.gov).
+`;
+
+const MINIMAL_MD = `# Welcome to QuartoPress
+
+This is a minimal Markdown document to get you started.
+
+- First item
+- Second item
+- Third item
+`;
+
+const MATH_MD = `# Math in Markdown
+
+Inline math: the quadratic formula is $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$.
+
+Block math:
+
+$$
+\\int_{-\\infty}^{\\infty} e^{-x^2} \\, dx = \\sqrt{\\pi}
+$$
 `;
 
 export function Converter() {
@@ -584,16 +605,54 @@ export function Converter() {
                   }}
                   className={cn(
                     "min-h-[280px] w-full resize-y rounded-xl border border-dashed bg-transparent px-4 py-3 font-mono text-sm leading-relaxed",
-                    "border-zinc-300 placeholder:text-muted-foreground/60",
+                    "border-zinc-300 placeholder:text-muted-foreground/70",
                     "focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/30",
                     "dark:border-zinc-700 dark:focus:border-accent/50",
                     "hover:border-accent/40 transition-colors duration-200"
                   )}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
-                {t("pasteHint")}
-              </p>
+              {pastedText.length === 0 ? (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-accent/50 hover:text-foreground"
+                    onClick={() => {
+                      setPastedText(MINIMAL_MD);
+                      toast.success(t("toastSampleLoaded"));
+                    }}
+                  >
+                    <FileText className="size-3" />
+                    {t("pasteQuickMinimal")}
+                  </button>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-accent/50 hover:text-foreground"
+                    onClick={() => {
+                      setPastedText(MATH_MD);
+                      toast.success(t("toastSampleLoaded"));
+                    }}
+                  >
+                    <Calculator className="size-3" />
+                    {t("pasteQuickMath")}
+                  </button>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-accent/50 hover:text-foreground"
+                    onClick={() => {
+                      setPastedText(SAMPLE_QMD);
+                      toast.success(t("toastSampleLoaded"));
+                    }}
+                  >
+                    <FileCode className="size-3" />
+                    {t("pasteQuickQuarto")}
+                  </button>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  {t("pasteHint")}
+                </p>
+              )}
               <div className="flex items-center gap-2">
                 <label
                   htmlFor="output-name"
