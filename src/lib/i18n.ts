@@ -25,6 +25,14 @@ const en = {
   dropzoneTitle: "Drag your document here",
   dropzoneSubtitle: "or click to select files",
 
+  inputModeUpload: "Upload file",
+  inputModePaste: "Paste markdown",
+  pastePlaceholder:
+    "Write or paste your Markdown or Quarto content here…",
+  pasteAria: "Markdown text editor",
+  pasteHint:
+    "Tip: paste your .qmd or .md content and convert it right away",
+
   fileMeta: "Document · {size}",
   removeFile: "Remove {name}",
 
@@ -104,6 +112,14 @@ const es = {
   dropzoneAria: "Subir documento .qmd o .md",
   dropzoneTitle: "Arrastra tu documento aquí",
   dropzoneSubtitle: "o haz clic para seleccionar archivos",
+
+  inputModeUpload: "Subir archivo",
+  inputModePaste: "Pegar Markdown",
+  pastePlaceholder:
+    "Escribe o pega aquí tu contenido Markdown o Quarto…",
+  pasteAria: "Editor de texto Markdown",
+  pasteHint:
+    "Consejo: pega tu contenido .qmd o .md y conviértelo al instante",
 
   fileMeta: "Documento · {size}",
   removeFile: "Quitar {name}",

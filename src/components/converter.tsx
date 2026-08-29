@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CheckCircle2,
+  ClipboardPen,
   Download,
   ExternalLink,
   FileCode,
@@ -88,6 +89,8 @@ export function Converter() {
   const [notebook, setNotebook] = useState<NotebookResult | null>(null);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [inputMode, setInputMode] = useState<"upload" | "paste">("upload");
+  const [pastedText, setPastedText] = useState("");
 
   const inputRef = useRef<HTMLInputElement>(null);
   const dragDepth = useRef(0);
@@ -266,9 +269,50 @@ export function Converter() {
       {/* Form */}
       <Card className="shadow-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 ease-out hover:-translate-y-px hover:shadow-lg hover:shadow-black/5 dark:ring-white/10">
         <CardContent className="p-6 sm:p-8">
-          {/* Dropzone */}
+          {/* Input mode toggle */}
           <div
-            role="button"
+            role="tablist"
+            aria-label={t("dropzoneAria")}
+            className="mb-4 inline-flex w-full max-w-xs rounded-lg bg-muted p-1"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={inputMode === "upload"}
+              tabIndex={inputMode === "upload" ? 0 : -1}
+              onClick={() => setInputMode("upload")}
+              className={cn(
+                "flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200",
+                inputMode === "upload"
+                  ? "bg-card shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Upload className="size-4" />
+              {t("inputModeUpload")}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={inputMode === "paste"}
+              tabIndex={inputMode === "paste" ? 0 : -1}
+              onClick={() => setInputMode("paste")}
+              className={cn(
+                "flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200",
+                inputMode === "paste"
+                  ? "bg-card shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <ClipboardPen className="size-4" />
+              {t("inputModePaste")}
+            </button>
+          </div>
+
+          {/* Dropzone */}
+          {inputMode === "upload" ? (
+            <div
+              role="button"
             tabIndex={0}
             aria-label={t("dropzoneAria")}
             onClick={() => inputRef.current?.click()}
@@ -334,6 +378,27 @@ export function Converter() {
               ))}
             </div>
           </div>
+          ) : (
+            <div className="space-y-3">
+              <textarea
+                aria-label={t("pasteAria")}
+                placeholder={t("pastePlaceholder")}
+                spellCheck={false}
+                value={pastedText}
+                onChange={(e) => setPastedText(e.target.value)}
+                className={cn(
+                  "min-h-[280px] w-full resize-y rounded-xl border border-dashed bg-transparent px-4 py-3 font-mono text-sm leading-relaxed",
+                  "border-zinc-300 placeholder:text-muted-foreground/60",
+                  "focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/30",
+                  "dark:border-zinc-700 dark:focus:border-accent/50",
+                  "hover:border-accent/40 transition-colors duration-200"
+                )}
+              />
+              <p className="text-xs text-muted-foreground">
+                {t("pasteHint")}
+              </p>
+            </div>
+          )}
 
           {/* Selected files */}
           {files.length > 0 && (
