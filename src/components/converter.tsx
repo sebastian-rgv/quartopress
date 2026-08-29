@@ -13,6 +13,8 @@ import {
   Printer,
   RefreshCw,
   Rocket,
+  Sparkles,
+  Trash2,
   TriangleAlert,
   Upload,
   X,
@@ -83,6 +85,69 @@ const FORMATS = [
 ] as const;
 
 type FormatId = (typeof FORMATS)[number]["id"];
+
+const SAMPLE_QMD = `---
+title: "An Interactive Analysis of Global Temperatures"
+author: "Dr. Ada Quarto"
+date: today
+format:
+  html:
+    toc: true
+    theme: cosmo
+---
+
+## Introduction
+
+This document demonstrates **bold text**, *italic text*, and a mix of _both styles_.
+
+Here is a list of key findings:
+
+- Average global temperatures have risen by **1.1°C** since pre-industrial times.
+- The *Arctic region* warms _twice as fast_ as the global average.
+- Ocean heat content reached a record high in 2025.
+
+## Methods
+
+We used the following R code to visualize the trend:
+
+\`\`\`{r}
+#| label: fig-temp
+#| fig-cap: "Global temperature anomaly over time"
+
+library(ggplot2)
+
+ggplot(globaltemps, aes(x = year, y = anomaly)) +
+  geom_line(color = "#e74c3c", linewidth = 1) +
+  geom_smooth(method = "loess", se = TRUE, alpha = 0.2) +
+  labs(
+    x = "Year",
+    y = "Temperature anomaly (°C)",
+    title = "Global Temperature Anomaly"
+  ) +
+  theme_minimal()
+\`\`\`
+
+## Data Summary
+
+| Year | Anomaly (°C) | Source    |
+|------|:------------:|-----------|
+| 2020 |    +1.29     | NASA GISS |
+| 2021 |    +1.11     | NASA GISS |
+| 2022 |    +1.15     | NASA GISS |
+| 2023 |    +1.17     | NASA GISS |
+
+## Theoretical Model
+
+The relationship between energy and mass is described by Einstein's equation:
+
+$$E = mc^2$$
+
+where $E$ is energy, $m$ is mass, and $c$ is the speed of light.
+
+## References
+
+For more information, see the [NASA Climate website](https://climate.nasa.gov).
+`;
 
 export function Converter() {
   const { t } = useI18n();
@@ -398,12 +463,55 @@ export function Converter() {
           </div>
           ) : (
             <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => {
+                      setPastedText(SAMPLE_QMD);
+                      toast.success(t("toastSampleLoaded"));
+                    }}
+                  >
+                    <Sparkles className="size-3.5" />
+                    {t("pasteLoadSample")}
+                  </Button>
+                  {pastedText.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => setPastedText("")}
+                    >
+                      <Trash2 className="size-3.5" />
+                      {t("pasteClear")}
+                    </Button>
+                  )}
+                </div>
+                <span className="text-xs text-muted-foreground tabular-nums font-mono">
+                  {t("pasteCounter", {
+                    chars: String(pastedText.length),
+                    words: String(
+                      pastedText.trim().length === 0
+                        ? 0
+                        : pastedText.trim().split(/\s+/).length
+                    ),
+                  })}
+                </span>
+              </div>
               <textarea
                 aria-label={t("pasteAria")}
                 placeholder={t("pastePlaceholder")}
                 spellCheck={false}
                 value={pastedText}
                 onChange={(e) => setPastedText(e.target.value)}
+                onKeyDown={(e) => {
+                  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                    e.preventDefault();
+                    if (canConvert && !busy) convert();
+                  }
+                }}
                 className={cn(
                   "min-h-[280px] w-full resize-y rounded-xl border border-dashed bg-transparent px-4 py-3 font-mono text-sm leading-relaxed",
                   "border-zinc-300 placeholder:text-muted-foreground/60",

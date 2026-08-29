@@ -80,6 +80,11 @@ const en = {
   previewEmptyBody:
     "Convert your document to see the preview here on the right.",
 
+  pasteCounter: "{chars} chars · {words} words",
+  pasteLoadSample: "Load sample",
+  pasteClear: "Clear",
+  toastSampleLoaded: "Sample document loaded",
+
   faqTitle: "Online QMD & Markdown converter — FAQ",
   faqWhatQ: "What is QuartoPress?",
   faqWhatA:
@@ -170,6 +175,11 @@ const es = {
   previewEmptyTitle: "Aún no hay resultado",
   previewEmptyBody:
     "Convierte tu documento para ver la vista previa aquí, a la derecha.",
+
+  pasteCounter: "{chars} caracteres · {words} palabras",
+  pasteLoadSample: "Cargar ejemplo",
+  pasteClear: "Limpiar",
+  toastSampleLoaded: "Documento de ejemplo cargado",
 
   faqTitle: "Conversor online de QMD y MD — preguntas frecuentes",
   faqWhatQ: "¿Qué es QuartoPress?",
