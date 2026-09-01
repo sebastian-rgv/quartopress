@@ -69,15 +69,10 @@ async function loadPandoc(
 }
 
 function prepareQuartoCopy(source: string): string {
-  // Normaliza line endings Windows (CRLF) y CR sueltos: los .qmd vienen
+  // Normaliza lineamientos Windows (CRLF) y CR sueltos: los .qmd vienen
   // con \r\n y los regex de limpieza de chunks solo matchean \n.
   let s = source.replace(/\r\n?/g, "\n");
-  // Convierte ```{r,echo=TRUE} o ```{.r} a ```r conservando el lenguaje,
-  // para que pandoc genere <pre class="sourceCode r"> y se pueda estilar.
-  s = s.replace(/^```\{([^}]*)\}\n/gm, (_match, opts: string) => {
-    const lang = opts.replace(/^\.?/, "").split(/[,;\s]+/)[0].trim();
-    return lang ? "```" + lang + "\n" : "```\n";
-  });
+  s = applyChunkOptions(s);
   s = wrapMathEnvironments(s);
   // texmath (pandoc) no soporta \hspace; lo convertimos a \qquad.
   s = s.replace(/\\hspace\*?\{[^}]*\}/g, "\\qquad");
@@ -200,6 +195,95 @@ const KERNELS: Record<string, KernelSpec> = {
 function detectLanguage(source: string): string | null {
   const m = source.match(/^```\{?\.?([a-zA-Z0-9]+)/m);
   return m ? m[1].toLowerCase() : null;
+}
+
+function parseChunkOptions(info: string): Record<string, string | boolean> {
+  const record: Record<string, string | boolean> = {};
+  if (!info || info.trim() === '') {
+    return record;
+  }
+  const lines = info.split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    // Modern Quarto #| key: value format
+    const m1 = trimmed.match(/^#\|\s*(\w+)\s*:\s*(.+)$/);
+    if (m1) {
+      const key = m1[1].toLowerCase();
+      let value = m1[2].trim();
+      value = value.replace(/^["']|["']$/g, '');
+      if (value.toLowerCase() === 'true' || value.toLowerCase() === 'false') {
+        record[key] = value.toLowerCase() === 'true';
+      } else {
+        record[key] = value;
+      }
+      continue;
+    }
+    // Classic key: value format (without #|)
+    const m2 = trimmed.match(/^(\w+)\s*:\s*(.+)$/);
+    if (m2) {
+      const key = m2[1].toLowerCase();
+      let value = m2[2].trim();
+      value = value.replace(/^["']|["']$/g, '');
+      if (value.toLowerCase() === 'true' || value.toLowerCase() === 'false') {
+        record[key] = value.toLowerCase() === 'true';
+      } else {
+        record[key] = value;
+      }
+      continue;
+    }
+    // Classic key=value format
+    const m3 = trimmed.match(/^(\w+)=(.+)$/);
+    if (m3) {
+      const key = m3[1].toLowerCase();
+      let value = m3[2].trim();
+      value = value.replace(/^["']|["']$/g, '');
+      if (value.toLowerCase() === 'true' || value.toLowerCase() === 'false') {
+        record[key] = value.toLowerCase() === 'true';
+      } else {
+        record[key] = value;
+      }
+      continue;
+    }
+  }
+  return record;
+}
+
+function applyChunkOptions(source: string): string {
+  return source.replace(
+    /^```\{([^\r\n]*)\r?\n([\s\S]*?)^```[ \t]*\r?$/gm,
+    (_match, info, body) => {
+      const opts = parseChunkOptions(info);
+      // echo: false => hide the whole code block (omit the chunk)
+      if (opts.echo === false) {
+        return '';
+      }
+      // include: false => drop the chunk entirely
+      if (opts.include === false) {
+        return '';
+      }
+// eval: false => keep the code block (strip option lines), no output
+      if (opts.eval === false) {
+        const cleanBody = body.replace(/^#\|\s*\w+\s*:/gm, '');
+        const lang = info.replace(/^\.?/, "").split(/[,;\s]+/)[0].trim();
+        return lang ? "```" + lang + "\n" + cleanBody + "```" : "```\n" + cleanBody + "```";
+      }
+      // fig-cap: "..." => replace img alt with fig-cap, strip the #| fig-cap line
+      if (opts['fig-cap']) {
+        const figCap = String(opts['fig-cap']).replace(/^["']|["']$/g, '');
+        const withFigCap = body.replace(/!\[(.*?)\]\((.*?)\)/g, (_: string, alt: string, src: string) => {
+          return `![${figCap}](${src})`;
+        });
+        const cleanBody = withFigCap.replace(/^#\|\s*fig-cap:\s*:?/gm, '');
+        const lang = info.replace(/^\.?/, "").split(/[,;\s]+/)[0].trim();
+        return lang ? "```" + lang + "\n" + cleanBody + "```" : "```\n" + cleanBody + "```";
+      }
+      // Default: strip option lines, keep code (current behavior)
+      const cleanBody = body.replace(/^#\|\s*\w+\s*:/gm, '');
+      const lang = info.replace(/^\.?/, "").split(/[,;\s]+/)[0].trim();
+      return lang ? "```" + lang + "\n" + cleanBody + "```" : "```\n" + cleanBody + "```";
+    }
+  );
 }
 
 function fencesToCodeCells(source: string): string {
