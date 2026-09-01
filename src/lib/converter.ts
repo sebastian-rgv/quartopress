@@ -3,6 +3,7 @@ import type { PandocInstance, ConvertOptions } from "./pandoc/core.js";
 
 export interface ConvertInput {
   source: string;
+  theme?: "light" | "dark" | "auto";
 }
 
 export interface ConvertedDoc {
@@ -81,11 +82,55 @@ function prepareQuartoCopy(source: string): string {
   return s;
 }
 
-function addPrintStyles(html: string): string {
+function addPrintStyles(html: string, theme: "light" | "dark" | "auto" = "auto"): string {
+  const lightVars = `
+:root {
+  --qp-code-bg: #f6f8fa;
+  --qp-code-border: #b6c2cf;
+  --qp-code-text: #1f2328;
+  --qp-kw: #9d1bc4;
+  --qp-fu: #0446b8;
+  --qp-st: #0a6b28;
+  --qp-dv: #9a4a00;
+  --qp-co: #57606a;
+  --qp-cn: #8a3a00;
+  --qp-ot: #6e2bd6;
+  --qp-at: #8a3a00;
+  --qp-sc: #0446b8;
+  --qp-dt: #0a6b28;
+  --qp-er: #b0080e;
+}`;
+
+  const darkVars = `
+:root {
+  --qp-code-bg: #161b22;
+  --qp-code-border: #30363d;
+  --qp-code-text: #e6edf3;
+  --qp-kw: #ff7b72;
+  --qp-fu: #79c0ff;
+  --qp-st: #a5d6ff;
+  --qp-dv: #ffa657;
+  --qp-co: #8b949e;
+  --qp-cn: #ffa657;
+  --qp-ot: #ff7b72;
+  --qp-at: #ffa657;
+  --qp-sc: #79c0ff;
+  --qp-dt: #ffa657;
+  --qp-er: #f85149;
+}`;
+
+  const colorScheme = theme === "light"
+    ? `:root { color-scheme: light; }`
+    : theme === "dark"
+    ? `:root { color-scheme: dark; }`
+    : "";
+
   const css = `<style>
+${lightVars}
+
 pre {
-  background: #f6f8fa !important;
-  border: 1px solid #b6c2cf !important;
+  background: var(--qp-code-bg) !important;
+  border: 1px solid var(--qp-code-border) !important;
   border-radius: 8px;
   padding: 1rem;
   overflow-x: auto;
@@ -95,7 +140,7 @@ pre {
   margin: 1em 0;
   max-width: 100%;
   box-sizing: border-box;
-  color: #1f2328 !important;
+  color: var(--qp-code-text) !important;
   white-space: pre-wrap !important;
   word-wrap: break-word !important;
   overflow-wrap: anywhere !important;
@@ -109,17 +154,17 @@ pre code {
   overflow-wrap: anywhere !important;
 }
 /* Sintaxis: colores fuertes (clases de pandoc/pygments) — fijos, sin modo oscuro */
-.sourceCode .kw { color: #9d1bc4 !important; font-weight: 700; }
-.sourceCode .fu { color: #0446b8 !important; }
-.sourceCode .st { color: #0a6b28 !important; }
-.sourceCode .dv, .sourceCode .fl { color: #9a4a00 !important; }
-.sourceCode .co, .sourceCode .ch, .sourceCode .c1 { color: #57606a !important; font-style: italic; }
-.sourceCode .cn { color: #8a3a00 !important; }
-.sourceCode .ot { color: #6e2bd6 !important; }
-.sourceCode .at { color: #8a3a00 !important; }
-.sourceCode .sc { color: #0446b8 !important; }
-.sourceCode .dt { color: #0a6b28 !important; }
-.sourceCode .er { color: #b0080e !important; font-weight: 700; }
+.sourceCode .kw { color: var(--qp-kw) !important; font-weight: 700; }
+.sourceCode .fu { color: var(--qp-fu) !important; }
+.sourceCode .st { color: var(--qp-st) !important; }
+.sourceCode .dv, .sourceCode .fl { color: var(--qp-dv) !important; }
+.sourceCode .co, .sourceCode .ch, .sourceCode .c1 { color: var(--qp-co) !important; font-style: italic; }
+.sourceCode .cn { color: var(--qp-cn) !important; }
+.sourceCode .ot { color: var(--qp-ot) !important; }
+.sourceCode .at { color: var(--qp-at) !important; }
+.sourceCode .sc { color: var(--qp-sc) !important; }
+.sourceCode .dt { color: var(--qp-dt) !important; }
+.sourceCode .er { color: var(--qp-er) !important; font-weight: 700; }
 @media print {
   @page { size: A4; margin: 2cm; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -140,6 +185,10 @@ pre code {
   .sourceCode .cn { color: #953800 !important; }
   .sourceCode .ot { color: #8250df !important; }
 }
+@media (prefers-color-scheme: dark) {
+  ${darkVars}
+}
+${colorScheme}
 </style>`;
   if (/<\/head>/i.test(html)) {
     return html.replace(/<\/head>/i, `${css}\n</head>`);
@@ -391,7 +440,7 @@ export async function convertDocument(
   }
 
   let html = result.stdout;
-  html = addPrintStyles(html);
+  html = addPrintStyles(html, input.theme ?? "auto");
 
   return {
     html,

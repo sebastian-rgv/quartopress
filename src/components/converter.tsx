@@ -338,7 +338,8 @@ export function Converter() {
       }
 
       if (wantHtml || wantPdf) {
-        const out = await convertDocument({ source }, (p) => setProgress(p));
+        const theme = document.documentElement.classList.contains("dark") ? "dark" : "light";
+        const out = await convertDocument({ source, theme }, (p) => setProgress(p));
 
         const fileName = `${baseName}.html`;
         if (blobUrl) URL.revokeObjectURL(blobUrl);
@@ -389,6 +390,7 @@ export function Converter() {
 
   const handlePrint = useCallback(() => {
     if (!blobUrl || !result) return;
+    const theme = document.documentElement.classList.contains("dark") ? "dark" : "light";
     const iframe = document.createElement("iframe");
     iframe.style.position = "fixed";
     iframe.style.right = "0";
