@@ -43,6 +43,10 @@ const en = {
   formatPdfDesc: "Print → save as PDF",
   formatIpynbName: "Notebook .ipynb",
   formatIpynbDesc: "With an R, Python or Julia kernel",
+  formatDocxName: "Word .docx",
+  formatDocxDesc: "Editable Word document",
+  formatEpubName: "EPUB",
+  formatEpubDesc: "E-book for readers",
   generateFormat: "Generate {name}",
   formatNote:
     "The PDF is generated with your browser (print → save as PDF). The notebook detects R, Python or Julia in the code chunks.",
@@ -66,6 +70,10 @@ const en = {
   toastConvertFailed: "Could not convert",
   toastDownloadingNotebook: "Downloading notebook…",
   toastDownloadingHtml: "Downloading HTML…",
+  toastDownloadingDocx: "Downloading DOCX…",
+  toastDownloadingEpub: "Downloading EPUB…",
+  downloadDocx: "Download DOCX",
+  downloadEpub: "Download EPUB",
 
   previewTitle: "Preview",
   newConversion: "New conversion",
@@ -148,6 +156,10 @@ const es = {
   formatPdfDesc: "Imprimir → guardar como PDF",
   formatIpynbName: "Notebook .ipynb",
   formatIpynbDesc: "Con kernel R, Python o Julia",
+  formatDocxName: "Word .docx",
+  formatDocxDesc: "Documento Word editable",
+  formatEpubName: "EPUB",
+  formatEpubDesc: "E-book para lectores",
   generateFormat: "Generar {name}",
   formatNote:
     "El PDF se genera con tu navegador (imprimir → guardar como PDF). El notebook detecta R, Python o Julia en los chunks de código.",
@@ -171,6 +183,10 @@ const es = {
   toastConvertFailed: "No se pudo convertir",
   toastDownloadingNotebook: "Descargando notebook…",
   toastDownloadingHtml: "Descargando HTML…",
+  toastDownloadingDocx: "Descargando DOCX…",
+  toastDownloadingEpub: "Descargando EPUB…",
+  downloadDocx: "Descargar DOCX",
+  downloadEpub: "Descargar EPUB",
 
   previewTitle: "Vista previa",
   newConversion: "Nueva conversión",

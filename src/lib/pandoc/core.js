@@ -248,16 +248,27 @@ export function createPandocInstance(wasmBinary) {
                 }
             }
 
-            return {
-                stdout: new TextDecoder("utf-8", {fatal: true}).decode(
+            // Binary: base64-encode raw output bytes instead of UTF-8 decoding
+            let stdout
+            let binaryBase64
+            if (options.binary) {
+                stdout = null
+                binaryBase64 = bytesToBase64(out_file.data)
+            } else {
+                stdout = new TextDecoder("utf-8", {fatal: true}).decode(
                     out_file.data
-                ),
+                )
+            }
+
+            return {
+                stdout,
                 stderr: new TextDecoder("utf-8", {fatal: true}).decode(
                     err_file.data
                 ),
                 warnings: warnings,
                 files: files,
-                mediaFiles: mediaFiles
+                mediaFiles: mediaFiles,
+                binaryBase64: options.binary ? binaryBase64 : null
             }
         }
 
@@ -292,6 +303,19 @@ export function createPandocInstance(wasmBinary) {
                 outData = new Blob([data])
             }
             return outData
+        }
+
+        // Base64-encode raw bytes (chunked to avoid call-stack issues)
+        function bytesToBase64(bytes) {
+            const CHUNK_SIZE = 0x8000
+            let result = ""
+            for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+                const chunk = bytes.slice(i, i + CHUNK_SIZE)
+                result += btoa(
+                    String.fromCharCode.apply(null, Array.from(chunk))
+                )
+            }
+            return result
         }
 
         // Legacy API: pandoc function (for backward compatibility)
