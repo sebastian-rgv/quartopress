@@ -1,5 +1,5 @@
 import { createPandocInstance } from "./pandoc/core.js";
-import type { PandocInstance } from "./pandoc/core.js";
+import type { PandocInstance, ConvertOptions } from "./pandoc/core.js";
 
 export interface ConvertInput {
   source: string;
@@ -317,6 +317,44 @@ function injectKernelspec(source: string, kernel: KernelSpec): string {
   return "---\n" + block + "---\n" + source;
 }
 
+/**
+ * Extrae el bloque de front matter YAML (entre delimitadores ---) de la fuente.
+ * Devuelve el contenido crudo o null si no hay front matter.
+ */
+export function parseYamlFrontMatter(source: string): string | null {
+  const m = source.match(/^---\s*\n([\s\S]*?)\n---\s*\n/);
+  return m ? m[1] : null;
+}
+
+/**
+ * Obtiene una opción booleana desde el front matter.
+ * Busca la clave tanto en nivel superior como anidada bajo format: html:.
+ * Acepta true/TRUE/True y yes como valores verdaderos.
+ */
+export function getBoolOption(frontMatter: string, key: string): boolean {
+  const keyRegex = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // Nivel superior: key: true/TRUE/True/yes
+  const topLevel = new RegExp(`^${keyRegex}\\s*:\\s*(true|TRUE|True|yes)\\b`, 'mi');
+  if (topLevel.test(frontMatter)) {
+    return true;
+  }
+
+  // Anidado multi-línea: format:\n  html:\n    key: true
+  const nestedMulti = new RegExp(`^format\\s*:\\s*\\n\\s*html\\s*:\\s*\\n\\s*${keyRegex}\\s*:\\s*(true|TRUE|True|yes)\\b`, 'mi');
+  if (nestedMulti.test(frontMatter)) {
+    return true;
+  }
+
+  // Anidado una línea: format: html: key: true
+  const nestedOneLine = new RegExp(`^format\\s*:\\s*html\\s*:\\s*${keyRegex}\\s*:\\s*(true|TRUE|True|yes)\\b`, 'mi');
+  if (nestedOneLine.test(frontMatter)) {
+    return true;
+  }
+
+  return false;
+}
+
 export async function convertDocument(
   input: ConvertInput,
   onProgress?: (p: ProgressInfo) => void
@@ -326,13 +364,23 @@ export async function convertDocument(
 
   const prepared = prepareQuartoCopy(input.source);
 
-  const options = {
+  const options: ConvertOptions = {
     from: "markdown",
     to: "html",
     standalone: true,
     "embed-resources": true,
     "html-math-method": "mathml",
   };
+
+  const frontMatter = parseYamlFrontMatter(input.source);
+  if (frontMatter) {
+    if (getBoolOption(frontMatter, "toc")) {
+      options["table-of-contents"] = true;
+    }
+    if (getBoolOption(frontMatter, "number-sections")) {
+      options["number-sections"] = true;
+    }
+  }
 
   const result = await pandoc.convert(options, prepared, {});
 
