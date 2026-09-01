@@ -16,6 +16,10 @@ export interface NotebookResult {
   kernel: string | null;
 }
 
+export interface SlidesResult {
+  html: string;
+}
+
 export interface ProgressInfo {
   loaded: number;
   total: number;
@@ -350,6 +354,81 @@ export async function convertDocument(
     warnings: (result.warnings ?? []).map((w) => String(w)),
     stderr: result.stderr,
   };
+}
+
+export async function convertSlides(
+  input: ConvertInput,
+  onProgress?: (p: ProgressInfo) => void
+): Promise<SlidesResult> {
+  const pandoc = await loadPandoc(onProgress);
+  report(onProgress, { loaded: 0, total: 0, phase: "convert" });
+
+  const prepared = prepareQuartoCopy(input.source);
+
+  const options = {
+    from: "markdown",
+    to: "revealjs",
+    standalone: true,
+    // revealjs-url debe ir como metadata/variable, no como opción directa:
+    // como opción directa pandoc lo ignora y cae al CDN de unpkg.
+    metadata: { "revealjs-url": "/reveal" },
+  };
+
+  const result = await pandoc.convert(options, prepared, {});
+
+  if (!result.stdout || result.stdout.trim().length === 0) {
+    const message =
+      result.stderr.trim() || "Pandoc no produjo salida. Revisa el documento.";
+    throw new Error(message);
+  }
+
+  let html = result.stdout;
+  html = await inlineRevealAssets(html);
+
+  return { html };
+}
+
+async function inlineRevealAssets(html: string): Promise<string> {
+  const tags: Array<{tag: string, url: string}> = [];
+  const tagRe = /<(script|link)[^>]*>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = tagRe.exec(html)) !== null) {
+    const tag = match[0];
+    const srcMatch = tag.match(/src=["']([^"']+)["']/i);
+    const hrefMatch = tag.match(/href=["']([^"']+)["']/i);
+    if (srcMatch) {
+      tags.push({ tag, url: srcMatch[1] });
+    } else if (hrefMatch) {
+      tags.push({ tag, url: hrefMatch[1] });
+    }
+  }
+
+  const processed = await Promise.all(
+    tags.map(async ({ tag, url }) => {
+      try {
+        const base = typeof window !== "undefined" ? window.location.origin : "";
+        const fullUrl = url.startsWith("/") ? base + url : url;
+        const res = await fetch(fullUrl);
+        if (!res.ok) return tag;
+        const content = await res.text();
+        if (tag.startsWith("<script")) {
+          return `<script>${content}</script>`;
+        }
+        if (tag.startsWith("<link")) {
+          return `<style>${content}</style>`;
+        }
+        return tag;
+      } catch {
+        return tag;
+      }
+    })
+  );
+
+  let output = html;
+  for (let i = 0; i < tags.length; i++) {
+    output = output.replace(tags[i].tag, processed[i]);
+  }
+  return output;
 }
 
 export async function convertNotebook(

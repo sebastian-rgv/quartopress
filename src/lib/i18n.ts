@@ -43,6 +43,8 @@ const en = {
   formatPdfDesc: "Print → save as PDF",
   formatIpynbName: "Notebook .ipynb",
   formatIpynbDesc: "With an R, Python or Julia kernel",
+  formatSlidesName: "Slides",
+  formatSlidesDesc: "Reveal.js presentation",
   generateFormat: "Generate {name}",
   formatNote:
     "The PDF is generated with your browser (print → save as PDF). The notebook detects R, Python or Julia in the code chunks.",
@@ -66,6 +68,8 @@ const en = {
   toastConvertFailed: "Could not convert",
   toastDownloadingNotebook: "Downloading notebook…",
   toastDownloadingHtml: "Downloading HTML…",
+  toastDownloadingSlides: "Downloading slides…",
+  downloadSlides: "Download slides",
 
   previewTitle: "Preview",
   newConversion: "New conversion",
@@ -148,6 +152,8 @@ const es = {
   formatPdfDesc: "Imprimir → guardar como PDF",
   formatIpynbName: "Notebook .ipynb",
   formatIpynbDesc: "Con kernel R, Python o Julia",
+  formatSlidesName: "Diapositivas",
+  formatSlidesDesc: "Presentación Reveal.js",
   generateFormat: "Generar {name}",
   formatNote:
     "El PDF se genera con tu navegador (imprimir → guardar como PDF). El notebook detecta R, Python o Julia en los chunks de código.",
@@ -171,6 +177,8 @@ const es = {
   toastConvertFailed: "No se pudo convertir",
   toastDownloadingNotebook: "Descargando notebook…",
   toastDownloadingHtml: "Descargando HTML…",
+  toastDownloadingSlides: "Descargando diapositivas…",
+  downloadSlides: "Descargar diapositivas",
 
   previewTitle: "Vista previa",
   newConversion: "Nueva conversión",

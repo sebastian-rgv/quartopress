@@ -12,6 +12,7 @@ import {
   FileText,
   Loader2,
   Notebook,
+  Presentation,
   Printer,
   RefreshCw,
   Rocket,
@@ -35,6 +36,7 @@ import { useI18n } from "@/components/language-provider";
 import { cn } from "@/lib/utils";
 import {
   convertDocument,
+  convertSlides,
   convertNotebook,
   formatBytes,
   type ProgressInfo,
@@ -83,6 +85,12 @@ const FORMATS = [
     nameKey: "formatIpynbName",
     descriptionKey: "formatIpynbDesc",
     icon: Notebook,
+  },
+  {
+    id: "slides",
+    nameKey: "formatSlidesName",
+    descriptionKey: "formatSlidesDesc",
+    icon: Presentation,
   },
 ] as const;
 
@@ -177,6 +185,7 @@ export function Converter() {
   const [wantHtml, setWantHtml] = useState(true);
   const [wantPdf, setWantPdf] = useState(true);
   const [wantIpynb, setWantIpynb] = useState(false);
+  const [wantSlides, setWantSlides] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [progress, setProgress] = useState<ProgressInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -200,15 +209,17 @@ export function Converter() {
       html: wantHtml,
       pdf: wantPdf,
       ipynb: wantIpynb,
+      slides: wantSlides,
     }),
-    [wantHtml, wantPdf, wantIpynb]
+    [wantHtml, wantPdf, wantIpynb, wantSlides]
   );
 
   const toggleFormat = useCallback(
     (id: FormatId, value: boolean) => {
       if (id === "html") setWantHtml(value);
       else if (id === "pdf") setWantPdf(value);
-      else setWantIpynb(value);
+      else if (id === "ipynb") setWantIpynb(value);
+      else setWantSlides(value);
     },
     []
   );
@@ -330,6 +341,22 @@ export function Converter() {
         });
       }
 
+      if (wantSlides) {
+        const out = await convertSlides({ source }, (p) => setProgress(p));
+
+        const fileName = `${baseName}.html`;
+        const html = out.html;
+        const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+
+        setBlobUrl(url);
+        setResult({
+          html,
+          fileName,
+          sourceName,
+        });
+      }
+
       setStatus("done");
       toast.success(t("toastConverted"), {
         description: t("toastConvertedDesc"),
@@ -341,7 +368,7 @@ export function Converter() {
       setStatus("error");
       toast.error(t("toastConvertFailed"), { description: message });
     }
-  }, [inputMode, pastedText, outputName, docs, blobUrl, wantHtml, wantPdf, wantIpynb, t]);
+  }, [inputMode, pastedText, outputName, docs, blobUrl, wantHtml, wantPdf, wantIpynb, wantSlides, t]);
 
   const handlePrint = useCallback(() => {
     if (!blobUrl || !result) return;
@@ -924,6 +951,27 @@ export function Converter() {
                   >
                     <Notebook className="size-4" />
                     {t("downloadIpynb")}
+                  </Button>
+                )}
+                {result && wantSlides && (
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    title={t("downloadSlides")}
+                    aria-label={t("downloadSlides")}
+                    onClick={() => {
+                      const url = blobUrl;
+                      if (!url) return;
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = result.fileName;
+                      a.click();
+                      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+                      toast.success(t("toastDownloadingSlides"));
+                    }}
+                  >
+                    <Download className="size-4" />
+                    {t("downloadSlides")}
                   </Button>
                 )}
                 {result && (
