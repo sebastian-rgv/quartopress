@@ -301,6 +301,64 @@ export async function convertNotebook(
   return { json: result.stdout, kernel: kernel?.name ?? null };
 }
 
+export interface BinaryResult {
+  base64: string;
+  mimeType: string;
+  fileName: string;
+}
+
+export function binaryToBlob(base64: string, mimeType: string): Blob {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: mimeType });
+}
+
+export async function convertBinary(
+  input: ConvertInput,
+  format: "docx" | "epub"
+): Promise<BinaryResult> {
+  const pandoc = await loadPandoc(undefined);
+  report(undefined, { loaded: 0, total: 0, phase: "convert" });
+
+  const normalized = input.source.replace(/\r\n?/g, "\n");
+  const prepared = prepareQuartoCopy(normalized);
+
+  const options = {
+    from: "markdown",
+    to: format,
+    standalone: true,
+    "embed-resources": true,
+  };
+
+  const result = await pandoc.convert(options, prepared, {});
+
+  if (!result.binaryBase64) {
+    const message =
+      result.stderr.trim() || "Pandoc no produjo salida. Revisa el documento.";
+    throw new Error(message);
+  }
+
+  const mimeTypes: Record<string, string> = {
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    epub: "application/epub+zip",
+  };
+
+  const fileNames: Record<string, string> = {
+    docx: "document.docx",
+    epub: "document.epub",
+  };
+
+  return {
+    base64: result.binaryBase64,
+    mimeType: mimeTypes[format],
+    fileName: fileNames[format],
+  };
+}
+
 export function formatBytes(bytes: number): string {
   if (bytes <= 0) return "0 B";
   const units = ["B", "KB", "MB", "GB"];

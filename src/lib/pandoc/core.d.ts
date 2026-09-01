@@ -11,6 +11,7 @@ export interface ConvertOptions {
   "embed-resources"?: boolean;
   "extract-media"?: string;
   metadata?: Record<string, unknown>;
+  binary?: boolean;
   [key: string]: unknown;
 }
 
@@ -20,6 +21,7 @@ export interface ConvertResult {
   warnings: unknown[];
   files: Record<string, string | Blob>;
   mediaFiles: Record<string, string | Blob>;
+  binaryBase64: string | null;
 }
 
 export interface PandocInstance {

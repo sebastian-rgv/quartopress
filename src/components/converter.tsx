@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  BookOpen,
   Calculator,
   CheckCircle2,
   ClipboardPaste,
@@ -36,6 +37,9 @@ import { cn } from "@/lib/utils";
 import {
   convertDocument,
   convertNotebook,
+  binaryToBlob,
+  type BinaryResult,
+  convertBinary,
   formatBytes,
   type ProgressInfo,
 } from "@/lib/converter";
@@ -46,6 +50,8 @@ interface Result {
   html: string;
   fileName: string;
   sourceName: string;
+  docx: BinaryResult | null;
+  epub: BinaryResult | null;
 }
 
 interface NotebookResult {
@@ -83,6 +89,18 @@ const FORMATS = [
     nameKey: "formatIpynbName",
     descriptionKey: "formatIpynbDesc",
     icon: Notebook,
+  },
+  {
+    id: "docx",
+    nameKey: "formatDocxName",
+    descriptionKey: "formatDocxDesc",
+    icon: FileText,
+  },
+  {
+    id: "epub",
+    nameKey: "formatEpubName",
+    descriptionKey: "formatEpubDesc",
+    icon: BookOpen,
   },
 ] as const;
 
@@ -177,6 +195,8 @@ export function Converter() {
   const [wantHtml, setWantHtml] = useState(true);
   const [wantPdf, setWantPdf] = useState(true);
   const [wantIpynb, setWantIpynb] = useState(false);
+  const [wantDocx, setWantDocx] = useState(false);
+  const [wantEpub, setWantEpub] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [progress, setProgress] = useState<ProgressInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -200,15 +220,19 @@ export function Converter() {
       html: wantHtml,
       pdf: wantPdf,
       ipynb: wantIpynb,
+      docx: wantDocx,
+      epub: wantEpub,
     }),
-    [wantHtml, wantPdf, wantIpynb]
+    [wantHtml, wantPdf, wantIpynb, wantDocx, wantEpub]
   );
 
   const toggleFormat = useCallback(
     (id: FormatId, value: boolean) => {
       if (id === "html") setWantHtml(value);
       else if (id === "pdf") setWantPdf(value);
-      else setWantIpynb(value);
+      else if (id === "ipynb") setWantIpynb(value);
+      else if (id === "docx") setWantDocx(value);
+      else if (id === "epub") setWantEpub(value);
     },
     []
   );
@@ -327,7 +351,27 @@ export function Converter() {
           html: out.html,
           fileName,
           sourceName,
+          docx: null,
+          epub: null,
         });
+      }
+
+      if (wantDocx) {
+        const result = await convertBinary({ source }, "docx");
+        setResult((prev) => ({
+          ...(prev as Result),
+          docx: result,
+          epub: prev?.epub,
+        } as Result));
+      }
+
+      if (wantEpub) {
+        const result = await convertBinary({ source }, "epub");
+        setResult((prev) => ({
+          ...(prev as Result),
+          epub: result,
+          docx: prev?.docx,
+        } as Result));
       }
 
       setStatus("done");
@@ -341,7 +385,7 @@ export function Converter() {
       setStatus("error");
       toast.error(t("toastConvertFailed"), { description: message });
     }
-  }, [inputMode, pastedText, outputName, docs, blobUrl, wantHtml, wantPdf, wantIpynb, t]);
+  }, [inputMode, pastedText, outputName, docs, blobUrl, wantHtml, wantPdf, wantIpynb, wantDocx, wantEpub, t]);
 
   const handlePrint = useCallback(() => {
     if (!blobUrl || !result) return;
@@ -924,6 +968,50 @@ export function Converter() {
                   >
                     <Notebook className="size-4" />
                     {t("downloadIpynb")}
+                  </Button>
+                )}
+                {result && result.docx && (
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    title={t("downloadDocx")}
+                    aria-label={t("downloadDocx")}
+onClick={() => {
+                      const docx = result.docx!
+                      const blob = binaryToBlob(docx.base64, docx.mimeType)
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement("a")
+                      a.href = url
+                      a.download = docx.fileName
+                      a.click()
+                      setTimeout(() => URL.revokeObjectURL(url), 10_000)
+                      toast.success(t("toastDownloadingDocx"))
+                    }}
+                  >
+                    <Download className="size-4" />
+                    {t("downloadDocx")}
+                  </Button>
+                )}
+                {result && result.epub && (
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    title={t("downloadEpub")}
+                    aria-label={t("downloadEpub")}
+                    onClick={() => {
+                      const epub = result.epub!
+                      const blob = binaryToBlob(epub.base64, epub.mimeType)
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement("a")
+                      a.href = url
+                      a.download = epub.fileName
+                      a.click()
+                      setTimeout(() => URL.revokeObjectURL(url), 10_000)
+                      toast.success(t("toastDownloadingEpub"))
+                    }}
+                  >
+                    <Notebook className="size-4" />
+                    {t("downloadEpub")}
                   </Button>
                 )}
                 {result && (
