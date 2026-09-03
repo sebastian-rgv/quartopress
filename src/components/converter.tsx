@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ClipboardPaste,
   ClipboardPen,
+  Columns2,
   Download,
   ExternalLink,
   FileCode,
@@ -210,6 +211,10 @@ export function Converter() {
   const [pastedText, setPastedText] = useState("");
   const [outputName, setOutputName] = useState("document");
   const [draggingPaste, setDraggingPaste] = useState(false);
+  const [splitMode, setSplitMode] = useState(false);
+  const [splitPreviewHtml, setSplitPreviewHtml] = useState<string | null>(null);
+  const [splitPreviewUrl, setSplitPreviewUrl] = useState<string | null>(null);
+  const splitDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const dragDepth = useRef(0);
@@ -270,8 +275,32 @@ export function Converter() {
   useEffect(() => {
     return () => {
       if (blobUrl) URL.revokeObjectURL(blobUrl);
+      if (splitPreviewUrl) URL.revokeObjectURL(splitPreviewUrl);
     };
-  }, [blobUrl]);
+  }, [blobUrl, splitPreviewUrl]);
+
+  useEffect(() => {
+    if (!splitMode || inputMode !== "paste" || pastedText.trim().length === 0) {
+      setSplitPreviewHtml(null);
+      return;
+    }
+    if (splitDebounce.current) clearTimeout(splitDebounce.current);
+    splitDebounce.current = setTimeout(async () => {
+      try {
+        const theme = document.documentElement.classList.contains("dark") ? "dark" : "light";
+        const out = await convertDocument({ source: pastedText, theme });
+        setSplitPreviewHtml(out.html);
+        if (splitPreviewUrl) URL.revokeObjectURL(splitPreviewUrl);
+        const url = URL.createObjectURL(new Blob([out.html], { type: "text/html;charset=utf-8" }));
+        setSplitPreviewUrl(url);
+      } catch {
+        setSplitPreviewHtml(null);
+      }
+    }, 500);
+    return () => {
+      if (splitDebounce.current) clearTimeout(splitDebounce.current);
+    };
+  }, [splitMode, inputMode, pastedText, splitPreviewUrl]);
 
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -661,19 +690,32 @@ export function Converter() {
                     </Button>
                   )}
                 </div>
-                <span className="text-xs text-muted-foreground tabular-nums font-mono">
-                  {t("pasteCounter", {
-                    chars: String(pastedText.length),
-                    words: String(
-                      pastedText.trim().length === 0
-                        ? 0
-                        : pastedText.trim().split(/\s+/).length
-                    ),
-                  })}
-                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={splitMode ? "default" : "ghost"}
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => setSplitMode(!splitMode)}
+                  >
+                    <Columns2 className="size-3.5" />
+                  </Button>
+                  <span className="text-xs text-muted-foreground tabular-nums font-mono">
+                    {t("pasteCounter", {
+                      chars: String(pastedText.length),
+                      words: String(
+                        pastedText.trim().length === 0
+                          ? 0
+                          : pastedText.trim().split(/\s+/).length
+                      ),
+                    })}
+                  </span>
+                </div>
               </div>
               <div
-                className="relative"
+                className={cn(
+                  "relative",
+                  splitMode && pastedText.trim().length > 0 && "grid grid-cols-2 gap-3"
+                )}
                 onDragEnter={handlePasteDragEnter}
                 onDragOver={handlePasteDragOver}
                 onDragLeave={handlePasteDragLeave}
@@ -703,9 +745,25 @@ export function Converter() {
                     "border-zinc-300 placeholder:text-muted-foreground/70",
                     "focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/30",
                     "dark:border-zinc-700 dark:focus:border-accent/50",
-                    "hover:border-accent/40 transition-colors duration-200"
+                    "hover:border-accent/40 transition-colors duration-200",
+                    splitMode && pastedText.trim().length > 0 && "min-h-[400px]"
                   )}
                 />
+                {splitMode && pastedText.trim().length > 0 && (
+                  <div className="min-h-[400px] overflow-auto rounded-xl border border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+                    {splitPreviewUrl ? (
+                      <iframe
+                        title="Split preview"
+                        src={splitPreviewUrl}
+                        className="h-full min-h-[400px] w-full"
+                      />
+                    ) : (
+                      <div className="flex h-[400px] items-center justify-center text-xs text-muted-foreground">
+                        <Loader2 className="size-4 animate-spin mr-2" />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               {pastedText.length === 0 ? (
                 <div className="flex flex-wrap items-center gap-1.5">
