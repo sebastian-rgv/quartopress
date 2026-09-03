@@ -45,6 +45,7 @@ import {
   generatePdf,
   type ProgressInfo,
 } from "@/lib/converter";
+import { trackConversion } from "@/lib/analytics";
 
 type Status = "idle" | "working" | "done" | "error";
 
@@ -451,6 +452,11 @@ export function Converter() {
       }
 
       setStatus("done");
+      if (wantHtml) trackConversion("html");
+      if (wantPdf) trackConversion("pdf");
+      if (wantIpynb) trackConversion("ipynb");
+      if (wantDocx) trackConversion("docx");
+      if (wantEpub) trackConversion("epub");
       toast.success(t("toastConverted"), {
         description: t("toastConvertedDesc"),
       });

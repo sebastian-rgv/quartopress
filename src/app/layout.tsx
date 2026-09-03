@@ -127,7 +127,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
         <script
           dangerouslySetInnerHTML={{
-            __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})})}`,
+            __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})})};(function(){try{var k='quartopress-views',d=JSON.parse(localStorage.getItem(k)||'{}'),t=new Date().toISOString().slice(0,10);d[t]=(d[t]||0)+1;var ks=Object.keys(d).sort().slice(-30),r={};ks.forEach(function(k){r[k]=d[k]});localStorage.setItem(k,JSON.stringify(r))}catch(e){}})()`,
           }}
         />
         <ThemeProvider
