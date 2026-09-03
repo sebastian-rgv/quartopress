@@ -583,3 +583,77 @@ export function formatBytes(bytes: number): string {
   const i = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
   return `${(bytes / 1024 ** i).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
+
+export async function generatePdf(html: string, fileName: string): Promise<Blob> {
+  const { default: html2canvas } = await import("html2canvas");
+  const { default: jsPDF } = await import("jspdf");
+
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.left = "-9999px";
+  iframe.style.top = "0";
+  iframe.style.width = "210mm";
+  iframe.style.border = "0";
+  document.body.appendChild(iframe);
+
+  return new Promise<Blob>((resolve, reject) => {
+    iframe.onload = async () => {
+      try {
+        const doc = iframe.contentDocument;
+        if (!doc) throw new Error("No se pudo acceder al documento del iframe");
+
+        const body = doc.body;
+        const pages: HTMLCanvasElement[] = [];
+        const PAGE_HEIGHT = 297;
+        const MARGIN = 10;
+        const CONTENT_HEIGHT = PAGE_HEIGHT - 2 * MARGIN;
+        const canvas = await html2canvas(body, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: "#ffffff",
+          windowWidth: 794,
+        });
+
+        const contentHeight = (canvas.height * 210) / canvas.width;
+        if (contentHeight <= PAGE_HEIGHT) {
+          pages.push(canvas);
+        } else {
+          const totalPages = Math.ceil(contentHeight / PAGE_HEIGHT);
+          for (let i = 0; i < totalPages; i++) {
+            const pageCanvas = document.createElement("canvas");
+            pageCanvas.width = canvas.width;
+            pageCanvas.height = (canvas.height * CONTENT_HEIGHT) / contentHeight;
+            const ctx = pageCanvas.getContext("2d")!;
+            const srcY = (i * canvas.height) / totalPages;
+            ctx.drawImage(
+              canvas,
+              0, srcY, canvas.width, pageCanvas.height,
+              0, 0, pageCanvas.width, pageCanvas.height
+            );
+            pages.push(pageCanvas);
+          }
+        }
+
+        const pdf = new jsPDF("p", "mm", "a4");
+        pages.forEach((pageCanvas, idx) => {
+          if (idx > 0) pdf.addPage();
+          const imgData = pageCanvas.toDataURL("image/jpeg", 0.95);
+          pdf.addImage(imgData, "JPEG", 0, 0, 210, PAGE_HEIGHT);
+        });
+
+        const blob = pdf.output("blob");
+        resolve(blob);
+      } catch (err) {
+        reject(err);
+      } finally {
+        setTimeout(() => iframe.remove(), 100);
+      }
+    };
+    iframe.onerror = () => {
+      iframe.remove();
+      reject(new Error("No se pudo cargar el iframe para generar PDF"));
+    };
+    iframe.srcdoc = html;
+  });
+}
