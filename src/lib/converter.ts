@@ -73,7 +73,7 @@ export async function loadPandoc(
   return instancePromise;
 }
 
-function prepareQuartoCopy(source: string): string {
+export function prepareQuartoCopy(source: string): string {
   // Normaliza lineamientos Windows (CRLF) y CR sueltos: los .qmd vienen
   // con \r\n y los regex de limpieza de chunks solo matchean \n.
   let s = source.replace(/\r\n?/g, "\n");
@@ -337,9 +337,9 @@ function parseChunkOptions(info: string): Record<string, string | boolean> {
 
 function applyChunkOptions(source: string): string {
   return source.replace(
-    /^```\{([^\r\n]*)\r?\n([\s\S]*?)^```[ \t]*\r?$/gm,
+    /^```\{([^\r\n}]*)\}?\r?\n([\s\S]*?)^```[ \t]*\r?$/gm,
     (_match, info, body) => {
-      const opts = parseChunkOptions(info);
+      const opts = parseChunkOptions(info + "\n" + body);
       // echo: false => hide the whole code block (omit the chunk)
       if (opts.echo === false) {
         return '';
@@ -350,7 +350,7 @@ function applyChunkOptions(source: string): string {
       }
 // eval: false => keep the code block (strip option lines), no output
       if (opts.eval === false) {
-        const cleanBody = body.replace(/^#\|\s*\w+\s*:/gm, '');
+        const cleanBody = body.replace(/^#\|\s*[\w-]+\s*:/gm, '');
         const lang = info.replace(/^\.?/, "").split(/[,;\s]+/)[0].trim();
         return lang ? "```" + lang + "\n" + cleanBody + "```" : "```\n" + cleanBody + "```";
       }
@@ -360,12 +360,12 @@ function applyChunkOptions(source: string): string {
         const withFigCap = body.replace(/!\[(.*?)\]\((.*?)\)/g, (_: string, alt: string, src: string) => {
           return `![${figCap}](${src})`;
         });
-        const cleanBody = withFigCap.replace(/^#\|\s*fig-cap:\s*:?/gm, '');
+        const cleanBody = withFigCap.replace(/^#\|\s*[\w-]+\s*:?\s*/gm, '');
         const lang = info.replace(/^\.?/, "").split(/[,;\s]+/)[0].trim();
         return lang ? "```" + lang + "\n" + cleanBody + "```" : "```\n" + cleanBody + "```";
       }
       // Default: strip option lines, keep code (current behavior)
-      const cleanBody = body.replace(/^#\|\s*\w+\s*:/gm, '');
+      const cleanBody = body.replace(/^#\|\s*[\w-]+\s*:/gm, '');
       const lang = info.replace(/^\.?/, "").split(/[,;\s]+/)[0].trim();
       return lang ? "```" + lang + "\n" + cleanBody + "```" : "```\n" + cleanBody + "```";
     }
