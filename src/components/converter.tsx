@@ -243,6 +243,21 @@ export function Converter() {
     };
   }, [blobUrl]);
 
+  const previewIframeRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    const iframe = previewIframeRef.current;
+    if (!iframe) return;
+    const sendTheme = () => {
+      const dark = document.documentElement.classList.contains("dark");
+      iframe.contentWindow?.postMessage({ type: "qp-theme-sync", dark }, "*");
+    };
+    sendTheme();
+    const mo = new MutationObserver(sendTheme);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => mo.disconnect();
+  }, [blobUrl]);
+
   const addFiles = useCallback((list: FileList | File[]) => {
     const next = Array.from(list);
     if (next.length === 0) return;
@@ -1041,9 +1056,10 @@ onClick={() => {
                 <>
                   <Separator className="my-5" />
                   <iframe
+                    ref={previewIframeRef}
                     title={t("previewFrameTitle")}
                     src={blobUrl}
-                    className="h-[70vh] w-full rounded-xl border bg-white shadow-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:h-[calc(100vh-24rem)] dark:ring-1 dark:ring-white/10"
+                    className="h-[70vh] w-full rounded-xl border bg-white shadow-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:h-[calc(100vh-24rem)] dark:border-white/10 dark:bg-zinc-900"
                   />
                 </>
               )}

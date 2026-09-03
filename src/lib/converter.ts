@@ -125,7 +125,26 @@ function addPrintStyles(html: string, theme: "light" | "dark" | "auto" = "auto")
     ? `:root { color-scheme: dark; }`
     : "";
 
-  const css = `<style>
+  const themeSyncScript = `
+<script>
+(function(){
+  function applyTheme(dark){
+    var r=document.documentElement;
+    if(dark){r.classList.add('dark');r.classList.remove('light');}
+    else{r.classList.add('light');r.classList.remove('dark');}
+  }
+  window.addEventListener('message',function(e){
+    if(e.data&&e.data.type==='qp-theme-sync'){
+      applyTheme(e.data.dark);
+    }
+  });
+  if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches){
+    applyTheme(true);
+  }
+})();
+</script>`;
+
+  const css = `<style id="qp-syntax-theme">
 ${lightVars}
 
 pre {
@@ -153,7 +172,6 @@ pre code {
   word-wrap: break-word !important;
   overflow-wrap: anywhere !important;
 }
-/* Sintaxis: colores fuertes (clases de pandoc/pygments) — fijos, sin modo oscuro */
 .sourceCode .kw { color: var(--qp-kw) !important; font-weight: 700; }
 .sourceCode .fu { color: var(--qp-fu) !important; }
 .sourceCode .st { color: var(--qp-st) !important; }
@@ -165,6 +183,24 @@ pre code {
 .sourceCode .sc { color: var(--qp-sc) !important; }
 .sourceCode .dt { color: var(--qp-dt) !important; }
 .sourceCode .er { color: var(--qp-er) !important; font-weight: 700; }
+.dark pre {
+  background: var(--qp-code-bg) !important;
+  border-color: var(--qp-code-border) !important;
+  color: var(--qp-code-text) !important;
+}
+.dark .sourceCode .kw { color: var(--qp-kw) !important; }
+.dark .sourceCode .fu { color: var(--qp-fu) !important; }
+.dark .sourceCode .st { color: var(--qp-st) !important; }
+.dark .sourceCode .dv, .dark .sourceCode .fl { color: var(--qp-dv) !important; }
+.dark .sourceCode .co, .dark .sourceCode .ch, .dark .sourceCode .c1 { color: var(--qp-co) !important; }
+.dark .sourceCode .cn { color: var(--qp-cn) !important; }
+.dark .sourceCode .ot { color: var(--qp-ot) !important; }
+.dark .sourceCode .at { color: var(--qp-at) !important; }
+.dark .sourceCode .sc { color: var(--qp-sc) !important; }
+.dark .sourceCode .dt { color: var(--qp-dt) !important; }
+.dark .sourceCode .er { color: var(--qp-er) !important; }
+.dark body { background: #0a0a0a !important; color: #e6edf3 !important; }
+.dark a { color: #79c0ff !important; }
 @media print {
   @page { size: A4; margin: 2cm; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -185,15 +221,12 @@ pre code {
   .sourceCode .cn { color: #953800 !important; }
   .sourceCode .ot { color: #8250df !important; }
 }
-@media (prefers-color-scheme: dark) {
-  ${darkVars}
-}
 ${colorScheme}
 </style>`;
   if (/<\/head>/i.test(html)) {
-    return html.replace(/<\/head>/i, `${css}\n</head>`);
+    return html.replace(/<\/head>/i, `${css}\n${themeSyncScript}\n</head>`);
   }
-  return css + "\n" + html;
+  return css + "\n" + themeSyncScript + "\n" + html;
 }
 
 /**
