@@ -27,6 +27,10 @@ const WASM_URL = "/pandoc.wasm";
 
 let instancePromise: Promise<PandocInstance> | null = null;
 
+export function isPandocLoaded(): boolean {
+  return instancePromise !== null;
+}
+
 function report(
   onProgress: ((p: ProgressInfo) => void) | undefined,
   info: ProgressInfo
@@ -34,7 +38,7 @@ function report(
   onProgress?.(info);
 }
 
-async function loadPandoc(
+export async function loadPandoc(
   onProgress: ((p: ProgressInfo) => void) | undefined
 ): Promise<PandocInstance> {
   if (!instancePromise) {

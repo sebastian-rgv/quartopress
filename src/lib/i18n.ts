@@ -102,6 +102,10 @@ const en = {
   pasteQuickMath: "With math",
   pasteQuickQuarto: "Quarto doc",
 
+  preloadEngine: "Preload engine",
+  preloadEngineDone: "Ready",
+  preloadEngineLoading: "Downloading Pandoc…",
+
   faqTitle: "Online QMD & Markdown converter — FAQ",
   faqWhatQ: "What is QuartoPress?",
   faqWhatA:
@@ -214,6 +218,10 @@ const es = {
   pasteQuickMinimal: "Mínimo",
   pasteQuickMath: "Con fórmulas",
   pasteQuickQuarto: "Documento Quarto",
+
+  preloadEngine: "Precargar motor",
+  preloadEngineDone: "Listo",
+  preloadEngineLoading: "Descargando Pandoc…",
 
   faqTitle: "Conversor online de QMD y MD — preguntas frecuentes",
   faqWhatQ: "¿Qué es QuartoPress?",
