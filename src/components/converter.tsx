@@ -62,6 +62,8 @@ interface NotebookResult {
 }
 
 const DOC_RE = /\.(qmd|md)$/i;
+const DRAFT_STORAGE_KEY = "quartopress-draft";
+const DRAFT_DEBOUNCE_MS = 500;
 
 function sanitizeOutputName(raw: string): string {
   return raw
@@ -212,6 +214,34 @@ export function Converter() {
   const inputRef = useRef<HTMLInputElement>(null);
   const dragDepth = useRef(0);
   const pasteDragDepth = useRef(0);
+  const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (saved) {
+        setPastedText(saved);
+        setInputMode("paste");
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (inputMode !== "paste") return;
+    if (draftTimer.current) clearTimeout(draftTimer.current);
+    draftTimer.current = setTimeout(() => {
+      try {
+        if (pastedText.trim().length > 0) {
+          localStorage.setItem(DRAFT_STORAGE_KEY, pastedText);
+        } else {
+          localStorage.removeItem(DRAFT_STORAGE_KEY);
+        }
+      } catch {}
+    }, DRAFT_DEBOUNCE_MS);
+    return () => {
+      if (draftTimer.current) clearTimeout(draftTimer.current);
+    };
+  }, [pastedText, inputMode]);
 
   const docs = useMemo(() => files.filter((f) => DOC_RE.test(f.name)), [files]);
 
@@ -445,6 +475,7 @@ export function Converter() {
     setNotebook(null);
     setError(null);
     setProgress(null);
+    try { localStorage.removeItem(DRAFT_STORAGE_KEY); } catch {}
   }, []);
 
   const downloadNotebook = useCallback(() => {
@@ -620,7 +651,10 @@ export function Converter() {
                       variant="ghost"
                       size="sm"
                       className="gap-1.5"
-                      onClick={() => setPastedText("")}
+                      onClick={() => {
+                        setPastedText("");
+                        try { localStorage.removeItem(DRAFT_STORAGE_KEY); } catch {}
+                      }}
                     >
                       <Trash2 className="size-3.5" />
                       {t("pasteClear")}
