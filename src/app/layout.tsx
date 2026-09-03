@@ -80,6 +80,12 @@ export const metadata: Metadata = {
   ],
   creator: "Sebastian Garcia Villacorta",
   alternates: { canonical: "/" },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "QuartoPress",
+  },
   openGraph: {
     type: "website",
     locale: "es_PE",
@@ -118,6 +124,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})})}`,
+          }}
         />
         <ThemeProvider
           attribute="class"
