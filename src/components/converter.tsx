@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   ClipboardPaste,
   ClipboardPen,
-  Columns2,
   Download,
   ExternalLink,
   FileCode,
@@ -44,7 +43,6 @@ import {
   formatBytes,
   type ProgressInfo,
 } from "@/lib/converter";
-import { trackConversion } from "@/lib/analytics";
 
 type Status = "idle" | "working" | "done" | "error";
 
@@ -64,8 +62,6 @@ interface NotebookResult {
 }
 
 const DOC_RE = /\.(qmd|md)$/i;
-const DRAFT_STORAGE_KEY = "quartopress-draft";
-const DRAFT_DEBOUNCE_MS = 500;
 
 function sanitizeOutputName(raw: string): string {
   return raw
@@ -212,42 +208,10 @@ export function Converter() {
   const [pastedText, setPastedText] = useState("");
   const [outputName, setOutputName] = useState("document");
   const [draggingPaste, setDraggingPaste] = useState(false);
-  const [splitMode, setSplitMode] = useState(false);
-  const [splitPreviewHtml, setSplitPreviewHtml] = useState<string | null>(null);
-  const [splitPreviewUrl, setSplitPreviewUrl] = useState<string | null>(null);
-  const splitDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const dragDepth = useRef(0);
   const pasteDragDepth = useRef(0);
-  const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
-      if (saved) {
-        setPastedText(saved);
-        setInputMode("paste");
-      }
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    if (inputMode !== "paste") return;
-    if (draftTimer.current) clearTimeout(draftTimer.current);
-    draftTimer.current = setTimeout(() => {
-      try {
-        if (pastedText.trim().length > 0) {
-          localStorage.setItem(DRAFT_STORAGE_KEY, pastedText);
-        } else {
-          localStorage.removeItem(DRAFT_STORAGE_KEY);
-        }
-      } catch {}
-    }, DRAFT_DEBOUNCE_MS);
-    return () => {
-      if (draftTimer.current) clearTimeout(draftTimer.current);
-    };
-  }, [pastedText, inputMode]);
 
   const docs = useMemo(() => files.filter((f) => DOC_RE.test(f.name)), [files]);
 
@@ -276,46 +240,7 @@ export function Converter() {
   useEffect(() => {
     return () => {
       if (blobUrl) URL.revokeObjectURL(blobUrl);
-      if (splitPreviewUrl) URL.revokeObjectURL(splitPreviewUrl);
     };
-  }, [blobUrl, splitPreviewUrl]);
-
-  useEffect(() => {
-    if (!splitMode || inputMode !== "paste" || pastedText.trim().length === 0) {
-      setSplitPreviewHtml(null);
-      return;
-    }
-    if (splitDebounce.current) clearTimeout(splitDebounce.current);
-    splitDebounce.current = setTimeout(async () => {
-      try {
-        const theme = document.documentElement.classList.contains("dark") ? "dark" : "light";
-        const out = await convertDocument({ source: pastedText, theme });
-        setSplitPreviewHtml(out.html);
-        if (splitPreviewUrl) URL.revokeObjectURL(splitPreviewUrl);
-        const url = URL.createObjectURL(new Blob([out.html], { type: "text/html;charset=utf-8" }));
-        setSplitPreviewUrl(url);
-      } catch {
-        setSplitPreviewHtml(null);
-      }
-    }, 500);
-    return () => {
-      if (splitDebounce.current) clearTimeout(splitDebounce.current);
-    };
-  }, [splitMode, inputMode, pastedText, splitPreviewUrl]);
-
-  const previewIframeRef = useRef<HTMLIFrameElement>(null);
-
-  useEffect(() => {
-    const iframe = previewIframeRef.current;
-    if (!iframe) return;
-    const sendTheme = () => {
-      const dark = document.documentElement.classList.contains("dark");
-      iframe.contentWindow?.postMessage({ type: "qp-theme-sync", dark }, "*");
-    };
-    sendTheme();
-    const mo = new MutationObserver(sendTheme);
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    return () => mo.disconnect();
   }, [blobUrl]);
 
   const addFiles = useCallback((list: FileList | File[]) => {
@@ -413,8 +338,7 @@ export function Converter() {
       }
 
       if (wantHtml || wantPdf) {
-        const theme = document.documentElement.classList.contains("dark") ? "dark" : "light";
-        const out = await convertDocument({ source, theme }, (p) => setProgress(p));
+        const out = await convertDocument({ source }, (p) => setProgress(p));
 
         const fileName = `${baseName}.html`;
         if (blobUrl) URL.revokeObjectURL(blobUrl);
@@ -451,11 +375,6 @@ export function Converter() {
       }
 
       setStatus("done");
-      if (wantHtml) trackConversion("html");
-      if (wantPdf) trackConversion("pdf");
-      if (wantIpynb) trackConversion("ipynb");
-      if (wantDocx) trackConversion("docx");
-      if (wantEpub) trackConversion("epub");
       toast.success(t("toastConverted"), {
         description: t("toastConvertedDesc"),
       });
@@ -483,16 +402,11 @@ export function Converter() {
       const win = iframe.contentWindow;
       if (win) {
         const pdfName = result.fileName.replace(/\.html$/i, "");
-        // Imprimir SIEMPRE en tema claro: si el SO está en dark mode el
-        // documento se aplica la clase .dark y el fondo saldría oscuro.
-        win.document.documentElement.classList.remove("dark");
-        win.document.documentElement.classList.add("light");
         // El iframe usa su propio <title> para el documento.
         win.document.title = pdfName;
-        // Chrome nombra el PDF con el <title> de la página PADRE (QuartoPress),
-        // no el del iframe. Lo cambiamos temporalmente y lo restauramos al
-        // cerrar el diálogo de impresión para que el archivo salga con el
-        // nombre del fuente.
+        // Chrome nombra el PDF con el <title> de la página PADRE (QuartoPress), no
+        // el del iframe. Lo cambiamos temporalmente y lo restauramos al cerrar el
+        // diálogo de impresión para que el archivo salga con el nombre del fuente.
         const prevTitle = document.title;
         document.title = pdfName;
         win.focus();
@@ -514,7 +428,6 @@ export function Converter() {
     setNotebook(null);
     setError(null);
     setProgress(null);
-    try { localStorage.removeItem(DRAFT_STORAGE_KEY); } catch {}
   }, []);
 
   const downloadNotebook = useCallback(() => {
@@ -690,42 +603,26 @@ export function Converter() {
                       variant="ghost"
                       size="sm"
                       className="gap-1.5"
-                      onClick={() => {
-                        setPastedText("");
-                        try { localStorage.removeItem(DRAFT_STORAGE_KEY); } catch {}
-                      }}
+                      onClick={() => setPastedText("")}
                     >
                       <Trash2 className="size-3.5" />
                       {t("pasteClear")}
                     </Button>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant={splitMode ? "default" : "ghost"}
-                    size="sm"
-                    className="gap-1.5"
-                    onClick={() => setSplitMode(!splitMode)}
-                  >
-                    <Columns2 className="size-3.5" />
-                  </Button>
-                  <span className="text-xs text-muted-foreground tabular-nums font-mono">
-                    {t("pasteCounter", {
-                      chars: String(pastedText.length),
-                      words: String(
-                        pastedText.trim().length === 0
-                          ? 0
-                          : pastedText.trim().split(/\s+/).length
-                      ),
-                    })}
-                  </span>
-                </div>
+                <span className="text-xs text-muted-foreground tabular-nums font-mono">
+                  {t("pasteCounter", {
+                    chars: String(pastedText.length),
+                    words: String(
+                      pastedText.trim().length === 0
+                        ? 0
+                        : pastedText.trim().split(/\s+/).length
+                    ),
+                  })}
+                </span>
               </div>
               <div
-                className={cn(
-                  "relative",
-                  splitMode && pastedText.trim().length > 0 && "grid grid-cols-2 gap-3"
-                )}
+                className="relative"
                 onDragEnter={handlePasteDragEnter}
                 onDragOver={handlePasteDragOver}
                 onDragLeave={handlePasteDragLeave}
@@ -755,25 +652,9 @@ export function Converter() {
                     "border-zinc-300 placeholder:text-muted-foreground/70",
                     "focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/30",
                     "dark:border-zinc-700 dark:focus:border-accent/50",
-                    "hover:border-accent/40 transition-colors duration-200",
-                    splitMode && pastedText.trim().length > 0 && "min-h-[400px]"
+                    "hover:border-accent/40 transition-colors duration-200"
                   )}
                 />
-                {splitMode && pastedText.trim().length > 0 && (
-                  <div className="min-h-[400px] overflow-auto rounded-xl border border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-                    {splitPreviewUrl ? (
-                      <iframe
-                        title="Split preview"
-                        src={splitPreviewUrl}
-                        className="h-full min-h-[400px] w-full"
-                      />
-                    ) : (
-                      <div className="flex h-[400px] items-center justify-center text-xs text-muted-foreground">
-                        <Loader2 className="size-4 animate-spin mr-2" />
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
               {pastedText.length === 0 ? (
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -1158,10 +1039,9 @@ onClick={() => {
                 <>
                   <Separator className="my-5" />
                   <iframe
-                    ref={previewIframeRef}
                     title={t("previewFrameTitle")}
                     src={blobUrl}
-                    className="h-[70vh] w-full rounded-xl border bg-white shadow-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:h-[calc(100vh-24rem)] dark:border-white/10 dark:bg-zinc-900"
+                    className="h-[70vh] w-full rounded-xl border bg-white shadow-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:h-[calc(100vh-24rem)] dark:ring-1 dark:ring-white/10"
                   />
                 </>
               )}

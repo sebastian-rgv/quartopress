@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { Bug, Cpu, Download, Languages, Loader2, ShieldCheck, Check, type LucideIcon } from "lucide-react";
+import { Bug, Cpu, Languages, ShieldCheck, type LucideIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -10,11 +9,8 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { Converter } from "@/components/converter";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { dictionaries, type I18nKey } from "@/lib/i18n";
-import { loadPandoc, isPandocLoaded, formatBytes, type ProgressInfo } from "@/lib/converter";
 
 const FEATURES: { icon: LucideIcon; labelKey: I18nKey }[] = [
   { icon: ShieldCheck, labelKey: "featureLocal" },
@@ -30,21 +26,6 @@ const FAQ: { q: I18nKey; a: I18nKey }[] = [
 
 export default function Home() {
   const { t } = useI18n();
-  const [preloaded, setPreloaded] = useState(isPandocLoaded());
-  const [preloadProgress, setPreloadProgress] = useState<ProgressInfo | null>(null);
-  const [preloading, setPreloading] = useState(false);
-
-  const handlePreload = useCallback(async () => {
-    if (preloaded || preloading) return;
-    setPreloading(true);
-    try {
-      await loadPandoc((p) => setPreloadProgress(p));
-      setPreloaded(true);
-    } catch {
-    } finally {
-      setPreloading(false);
-    }
-  }, [preloaded, preloading]);
 
   return (
     <div className="relative flex flex-1 flex-col overflow-hidden bg-gradient-to-b from-zinc-50 via-white to-white px-4 dark:from-zinc-900 dark:via-zinc-950 dark:to-zinc-950">
@@ -142,47 +123,6 @@ export default function Home() {
                 {t(labelKey)}
               </Badge>
             ))}
-          </div>
-
-          <div className="mt-6 flex flex-col items-center gap-2">
-            {preloaded ? (
-              <Badge
-                variant="outline"
-                className="gap-1.5 rounded-full px-3 py-1 font-display text-sm tracking-wide text-accent"
-              >
-                <Check className="size-3.5" />
-                {t("preloadEngineDone")}
-              </Badge>
-            ) : (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2 rounded-full"
-                  onClick={handlePreload}
-                  disabled={preloading}
-                >
-                  {preloading ? (
-                    <Loader2 className="size-3.5 animate-spin" />
-                  ) : (
-                    <Download className="size-3.5" />
-                  )}
-                  {preloading ? t("preloadEngineLoading") : t("preloadEngine")}
-                </Button>
-                {preloading && preloadProgress && preloadProgress.phase === "download" && preloadProgress.total > 0 && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Progress
-                      value={Math.round((preloadProgress.loaded / preloadProgress.total) * 100)}
-                      className="w-32 h-1.5"
-                      indicatorClassName="bg-accent"
-                    />
-                    <span className="font-mono tabular-nums">
-                      {formatBytes(preloadProgress.loaded)} / {formatBytes(preloadProgress.total)}
-                    </span>
-                  </div>
-                )}
-              </>
-            )}
           </div>
         </section>
 
