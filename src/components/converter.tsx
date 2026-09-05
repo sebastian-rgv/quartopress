@@ -42,7 +42,6 @@ import {
   type BinaryResult,
   convertBinary,
   formatBytes,
-  generatePdf,
   type ProgressInfo,
 } from "@/lib/converter";
 import { trackConversion } from "@/lib/analytics";
@@ -469,25 +468,45 @@ export function Converter() {
     }
   }, [inputMode, pastedText, outputName, docs, blobUrl, wantHtml, wantPdf, wantIpynb, wantDocx, wantEpub, t]);
 
-  const handlePrint = useCallback(async () => {
-    if (!result) return;
-    try {
-      setStatus("working");
-      const blob = await generatePdf(result.html, result.fileName);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = result.fileName.replace(/\.html$/i, ".pdf");
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 10_000);
-      toast.success(t("toastDownloadingPdf"));
-      setStatus("done");
-    } catch (e) {
-      const message = e instanceof Error ? e.message : t("unexpectedError");
-      toast.error(t("toastConvertFailed"), { description: message });
-      setStatus("done");
-    }
-  }, [result, t]);
+  const handlePrint = useCallback(() => {
+    if (!blobUrl || !result) return;
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+    iframe.src = blobUrl;
+    iframe.onload = () => {
+      const win = iframe.contentWindow;
+      if (win) {
+        const pdfName = result.fileName.replace(/\.html$/i, "");
+        // Imprimir SIEMPRE en tema claro: si el SO está en dark mode el
+        // documento se aplica la clase .dark y el fondo saldría oscuro.
+        win.document.documentElement.classList.remove("dark");
+        win.document.documentElement.classList.add("light");
+        // El iframe usa su propio <title> para el documento.
+        win.document.title = pdfName;
+        // Chrome nombra el PDF con el <title> de la página PADRE (QuartoPress),
+        // no el del iframe. Lo cambiamos temporalmente y lo restauramos al
+        // cerrar el diálogo de impresión para que el archivo salga con el
+        // nombre del fuente.
+        const prevTitle = document.title;
+        document.title = pdfName;
+        win.focus();
+        win.print();
+        const restore = () => {
+          document.title = prevTitle;
+        };
+        window.addEventListener("afterprint", restore, { once: true });
+        setTimeout(restore, 120_000);
+      }
+      setTimeout(() => iframe.remove(), 120_000);
+    };
+    iframe.onerror = () => iframe.remove();
+  }, [blobUrl, result]);
 
   const reset = useCallback(() => {
     setStatus("idle");
