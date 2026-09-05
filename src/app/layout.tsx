@@ -80,12 +80,6 @@ export const metadata: Metadata = {
   ],
   creator: "Sebastian Garcia Villacorta",
   alternates: { canonical: "/" },
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "QuartoPress",
-  },
   openGraph: {
     type: "website",
     locale: "es_PE",
@@ -124,11 +118,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})})};(function(){try{var k='quartopress-views',d=JSON.parse(localStorage.getItem(k)||'{}'),t=new Date().toISOString().slice(0,10);d[t]=(d[t]||0)+1;var ks=Object.keys(d).sort().slice(-30),r={};ks.forEach(function(k){r[k]=d[k]});localStorage.setItem(k,JSON.stringify(r))}catch(e){}})()`,
-          }}
         />
         <ThemeProvider
           attribute="class"

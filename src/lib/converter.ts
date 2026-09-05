@@ -3,7 +3,6 @@ import type { PandocInstance, ConvertOptions } from "./pandoc/core.js";
 
 export interface ConvertInput {
   source: string;
-  theme?: "light" | "dark" | "auto";
 }
 
 export interface ConvertedDoc {
@@ -27,10 +26,6 @@ const WASM_URL = "/pandoc.wasm";
 
 let instancePromise: Promise<PandocInstance> | null = null;
 
-export function isPandocLoaded(): boolean {
-  return instancePromise !== null;
-}
-
 function report(
   onProgress: ((p: ProgressInfo) => void) | undefined,
   info: ProgressInfo
@@ -38,7 +33,7 @@ function report(
   onProgress?.(info);
 }
 
-export async function loadPandoc(
+async function loadPandoc(
   onProgress: ((p: ProgressInfo) => void) | undefined
 ): Promise<PandocInstance> {
   if (!instancePromise) {
@@ -73,7 +68,7 @@ export async function loadPandoc(
   return instancePromise;
 }
 
-export function prepareQuartoCopy(source: string): string {
+function prepareQuartoCopy(source: string): string {
   // Normaliza lineamientos Windows (CRLF) y CR sueltos: los .qmd vienen
   // con \r\n y los regex de limpieza de chunks solo matchean \n.
   let s = source.replace(/\r\n?/g, "\n");
@@ -86,74 +81,11 @@ export function prepareQuartoCopy(source: string): string {
   return s;
 }
 
-function addPrintStyles(html: string, theme: "light" | "dark" | "auto" = "auto"): string {
-  const lightVars = `
-:root {
-  --qp-code-bg: #f6f8fa;
-  --qp-code-border: #b6c2cf;
-  --qp-code-text: #1f2328;
-  --qp-kw: #9d1bc4;
-  --qp-fu: #0446b8;
-  --qp-st: #0a6b28;
-  --qp-dv: #9a4a00;
-  --qp-co: #57606a;
-  --qp-cn: #8a3a00;
-  --qp-ot: #6e2bd6;
-  --qp-at: #8a3a00;
-  --qp-sc: #0446b8;
-  --qp-dt: #0a6b28;
-  --qp-er: #b0080e;
-}`;
-
-  const darkVars = `
-:root {
-  --qp-code-bg: #161b22;
-  --qp-code-border: #30363d;
-  --qp-code-text: #e6edf3;
-  --qp-kw: #ff7b72;
-  --qp-fu: #79c0ff;
-  --qp-st: #a5d6ff;
-  --qp-dv: #ffa657;
-  --qp-co: #8b949e;
-  --qp-cn: #ffa657;
-  --qp-ot: #ff7b72;
-  --qp-at: #ffa657;
-  --qp-sc: #79c0ff;
-  --qp-dt: #ffa657;
-  --qp-er: #f85149;
-}`;
-
-  const colorScheme = theme === "light"
-    ? `:root { color-scheme: light; }`
-    : theme === "dark"
-    ? `:root { color-scheme: dark; }`
-    : "";
-
-  const themeSyncScript = `
-<script>
-(function(){
-  function applyTheme(dark){
-    var r=document.documentElement;
-    if(dark){r.classList.add('dark');r.classList.remove('light');}
-    else{r.classList.add('light');r.classList.remove('dark');}
-  }
-  window.addEventListener('message',function(e){
-    if(e.data&&e.data.type==='qp-theme-sync'){
-      applyTheme(e.data.dark);
-    }
-  });
-  if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches){
-    applyTheme(true);
-  }
-})();
-</script>`;
-
-  const css = `<style id="qp-syntax-theme">
-${lightVars}
-
+function addPrintStyles(html: string): string {
+  const css = `<style>
 pre {
-  background: var(--qp-code-bg) !important;
-  border: 1px solid var(--qp-code-border) !important;
+  background: #f6f8fa !important;
+  border: 1px solid #b6c2cf !important;
   border-radius: 8px;
   padding: 1rem;
   overflow-x: auto;
@@ -163,7 +95,7 @@ pre {
   margin: 1em 0;
   max-width: 100%;
   box-sizing: border-box;
-  color: var(--qp-code-text) !important;
+  color: #1f2328 !important;
   white-space: pre-wrap !important;
   word-wrap: break-word !important;
   overflow-wrap: anywhere !important;
@@ -176,35 +108,18 @@ pre code {
   word-wrap: break-word !important;
   overflow-wrap: anywhere !important;
 }
-.sourceCode .kw { color: var(--qp-kw) !important; font-weight: 700; }
-.sourceCode .fu { color: var(--qp-fu) !important; }
-.sourceCode .st { color: var(--qp-st) !important; }
-.sourceCode .dv, .sourceCode .fl { color: var(--qp-dv) !important; }
-.sourceCode .co, .sourceCode .ch, .sourceCode .c1 { color: var(--qp-co) !important; font-style: italic; }
-.sourceCode .cn { color: var(--qp-cn) !important; }
-.sourceCode .ot { color: var(--qp-ot) !important; }
-.sourceCode .at { color: var(--qp-at) !important; }
-.sourceCode .sc { color: var(--qp-sc) !important; }
-.sourceCode .dt { color: var(--qp-dt) !important; }
-.sourceCode .er { color: var(--qp-er) !important; font-weight: 700; }
-.dark pre {
-  background: var(--qp-code-bg) !important;
-  border-color: var(--qp-code-border) !important;
-  color: var(--qp-code-text) !important;
-}
-.dark .sourceCode .kw { color: var(--qp-kw) !important; }
-.dark .sourceCode .fu { color: var(--qp-fu) !important; }
-.dark .sourceCode .st { color: var(--qp-st) !important; }
-.dark .sourceCode .dv, .dark .sourceCode .fl { color: var(--qp-dv) !important; }
-.dark .sourceCode .co, .dark .sourceCode .ch, .dark .sourceCode .c1 { color: var(--qp-co) !important; }
-.dark .sourceCode .cn { color: var(--qp-cn) !important; }
-.dark .sourceCode .ot { color: var(--qp-ot) !important; }
-.dark .sourceCode .at { color: var(--qp-at) !important; }
-.dark .sourceCode .sc { color: var(--qp-sc) !important; }
-.dark .sourceCode .dt { color: var(--qp-dt) !important; }
-.dark .sourceCode .er { color: var(--qp-er) !important; }
-.dark body { background: #0a0a0a !important; color: #e6edf3 !important; }
-.dark a { color: #79c0ff !important; }
+/* Sintaxis: colores fuertes (clases de pandoc/pygments) — fijos, sin modo oscuro */
+.sourceCode .kw { color: #9d1bc4 !important; font-weight: 700; }
+.sourceCode .fu { color: #0446b8 !important; }
+.sourceCode .st { color: #0a6b28 !important; }
+.sourceCode .dv, .sourceCode .fl { color: #9a4a00 !important; }
+.sourceCode .co, .sourceCode .ch, .sourceCode .c1 { color: #57606a !important; font-style: italic; }
+.sourceCode .cn { color: #8a3a00 !important; }
+.sourceCode .ot { color: #6e2bd6 !important; }
+.sourceCode .at { color: #8a3a00 !important; }
+.sourceCode .sc { color: #0446b8 !important; }
+.sourceCode .dt { color: #0a6b28 !important; }
+.sourceCode .er { color: #b0080e !important; font-weight: 700; }
 @media print {
   @page { size: A4; margin: 2cm; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -224,27 +139,12 @@ pre code {
   .sourceCode .co, .sourceCode .ch, .sourceCode .c1 { color: #6e7781 !important; }
   .sourceCode .cn { color: #953800 !important; }
   .sourceCode .ot { color: #8250df !important; }
-  html,
-  body {
-    background: #ffffff !important;
-    color: #1f2328 !important;
-  }
-  .dark body,
-  .light body {
-    background: #ffffff !important;
-    color: #1f2328 !important;
-  }
-  .dark a,
-  .light a {
-    color: #0550ae !important;
-  }
 }
-${colorScheme}
 </style>`;
   if (/<\/head>/i.test(html)) {
-    return html.replace(/<\/head>/i, `${css}\n${themeSyncScript}\n</head>`);
+    return html.replace(/<\/head>/i, `${css}\n</head>`);
   }
-  return css + "\n" + themeSyncScript + "\n" + html;
+  return css + "\n" + html;
 }
 
 /**
@@ -351,9 +251,9 @@ function parseChunkOptions(info: string): Record<string, string | boolean> {
 
 function applyChunkOptions(source: string): string {
   return source.replace(
-    /^```\{([^\r\n}]*)\}?\r?\n([\s\S]*?)^```[ \t]*\r?$/gm,
+    /^```\{([^\r\n]*)\r?\n([\s\S]*?)^```[ \t]*\r?$/gm,
     (_match, info, body) => {
-      const opts = parseChunkOptions(info + "\n" + body);
+      const opts = parseChunkOptions(info);
       // echo: false => hide the whole code block (omit the chunk)
       if (opts.echo === false) {
         return '';
@@ -364,7 +264,7 @@ function applyChunkOptions(source: string): string {
       }
 // eval: false => keep the code block (strip option lines), no output
       if (opts.eval === false) {
-        const cleanBody = body.replace(/^#\|\s*[\w-]+\s*:/gm, '');
+        const cleanBody = body.replace(/^#\|\s*\w+\s*:/gm, '');
         const lang = info.replace(/^\.?/, "").split(/[,;\s]+/)[0].trim();
         return lang ? "```" + lang + "\n" + cleanBody + "```" : "```\n" + cleanBody + "```";
       }
@@ -374,12 +274,12 @@ function applyChunkOptions(source: string): string {
         const withFigCap = body.replace(/!\[(.*?)\]\((.*?)\)/g, (_: string, alt: string, src: string) => {
           return `![${figCap}](${src})`;
         });
-        const cleanBody = withFigCap.replace(/^#\|\s*[\w-]+\s*:?\s*/gm, '');
+        const cleanBody = withFigCap.replace(/^#\|\s*fig-cap:\s*:?/gm, '');
         const lang = info.replace(/^\.?/, "").split(/[,;\s]+/)[0].trim();
         return lang ? "```" + lang + "\n" + cleanBody + "```" : "```\n" + cleanBody + "```";
       }
       // Default: strip option lines, keep code (current behavior)
-      const cleanBody = body.replace(/^#\|\s*[\w-]+\s*:/gm, '');
+      const cleanBody = body.replace(/^#\|\s*\w+\s*:/gm, '');
       const lang = info.replace(/^\.?/, "").split(/[,;\s]+/)[0].trim();
       return lang ? "```" + lang + "\n" + cleanBody + "```" : "```\n" + cleanBody + "```";
     }
@@ -491,7 +391,7 @@ export async function convertDocument(
   }
 
   let html = result.stdout;
-  html = addPrintStyles(html, input.theme ?? "auto");
+  html = addPrintStyles(html);
 
   return {
     html,
@@ -597,4 +497,3 @@ export function formatBytes(bytes: number): string {
   const i = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
   return `${(bytes / 1024 ** i).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
-
